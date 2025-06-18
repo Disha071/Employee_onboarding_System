@@ -1,39 +1,54 @@
-
 import { useState } from 'react';
-import { Users, FileCheck, TrendingUp, AlertCircle, Download, UserPlus, Search } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Users, FileCheck, TrendingUp, Clock, UserPlus, Upload, Download, Search, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Input } from '@/components/ui/input';
-import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
+import { Input } from '@/components/ui/input';
 
 const AdminDashboard = () => {
   const [newHires] = useState([
-    { id: 1, name: 'John Doe', department: 'Engineering', startDate: '2024-01-15', progress: 65, status: 'in-progress' },
-    { id: 2, name: 'Jane Smith', department: 'Marketing', startDate: '2024-01-20', progress: 90, status: 'in-progress' },
-    { id: 3, name: 'Mike Johnson', department: 'Sales', startDate: '2024-01-10', progress: 100, status: 'completed' },
-    { id: 4, name: 'Sarah Wilson', department: 'HR', startDate: '2024-01-25', progress: 35, status: 'pending' },
+    { id: 1, name: 'John Doe', department: 'Engineering', startDate: '2024-01-15', progress: 65 },
+    { id: 2, name: 'Jane Smith', department: 'Marketing', startDate: '2024-01-20', progress: 80 },
+    { id: 3, name: 'Mike Johnson', department: 'Sales', startDate: '2024-01-25', progress: 45 },
+  ]);
+
+  const [pendingDocuments] = useState([
+    { id: 1, employee: 'John Doe', document: 'Educational Certificate', submitted: '2024-01-20' },
+    { id: 2, employee: 'Jane Smith', document: 'Previous Employment', submitted: '2024-01-21' },
   ]);
 
   const stats = [
-    { title: 'Total New Hires', value: '24', change: '+12%', icon: Users, color: 'text-blue-600', bgColor: 'bg-blue-50' },
-    { title: 'Completed Onboarding', value: '18', change: '+8%', icon: FileCheck, color: 'text-green-600', bgColor: 'bg-green-50' },
-    { title: 'In Progress', value: '6', change: '+4', icon: TrendingUp, color: 'text-orange-600', bgColor: 'bg-orange-50' },
-    { title: 'Pending Documents', value: '12', change: '-2', icon: AlertCircle, color: 'text-red-600', bgColor: 'bg-red-50' },
+    {
+      title: 'Total New Hires',
+      value: '24',
+      icon: Users,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50',
+    },
+    {
+      title: 'Pending Verifications',
+      value: '8',
+      icon: FileCheck,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50',
+    },
+    {
+      title: 'Completed This Month',
+      value: '16',
+      icon: TrendingUp,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50',
+    },
+    {
+      title: 'Avg. Completion Time',
+      value: '5.2 days',
+      icon: Clock,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50',
+    },
   ];
-
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'completed':
-        return <Badge className="bg-green-100 text-green-800">Completed</Badge>;
-      case 'in-progress':
-        return <Badge className="bg-blue-100 text-blue-800">In Progress</Badge>;
-      case 'pending':
-        return <Badge className="bg-orange-100 text-orange-800">Pending</Badge>;
-      default:
-        return <Badge variant="outline">Unknown</Badge>;
-    }
-  };
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -46,21 +61,24 @@ const AdminDashboard = () => {
               <p className="text-sm text-gray-600">Manage employee onboarding</p>
             </div>
             <div className="flex space-x-3">
-              <Button className="bg-green-600 hover:bg-green-700">
+              <Link to="/">
+                <Button variant="outline">
+                  <Home className="h-4 w-4 mr-2" />
+                  Home
+                </Button>
+              </Link>
+              <Button className="bg-blue-600 hover:bg-blue-700">
                 <UserPlus className="h-4 w-4 mr-2" />
-                Add New Hire
-              </Button>
-              <Button variant="outline">
-                <Download className="h-4 w-4 mr-2" />
-                Export Report
+                Add New Employee
               </Button>
             </div>
           </div>
         </div>
       </div>
 
+      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Grid */}
+        {/* Stats Overview */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
             <Card key={index} className="hover:shadow-lg transition-shadow">
@@ -71,12 +89,7 @@ const AdminDashboard = () => {
                   </div>
                   <div>
                     <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <div className="flex items-center space-x-2">
-                      <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                      <span className={`text-sm ${stat.change.startsWith('+') ? 'text-green-600' : 'text-red-600'}`}>
-                        {stat.change}
-                      </span>
-                    </div>
+                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
                   </div>
                 </div>
               </CardContent>
@@ -84,132 +97,140 @@ const AdminDashboard = () => {
           ))}
         </div>
 
-        {/* Main Content */}
-        <Tabs defaultValue="overview" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="overview">Overview</TabsTrigger>
-            <TabsTrigger value="employees">Employees</TabsTrigger>
-            <TabsTrigger value="documents">Documents</TabsTrigger>
-            <TabsTrigger value="analytics">Analytics</TabsTrigger>
+        {/* Tabs */}
+        <Tabs defaultValue="new-hires" className="space-y-4">
+          <TabsList className="flex">
+            <TabsTrigger value="new-hires" className="data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600">
+              New Hires
+            </TabsTrigger>
+            <TabsTrigger value="pending-docs" className="data-[state=active]:bg-gray-100 data-[state=active]:text-orange-600">
+              Pending Documents
+            </TabsTrigger>
+            <TabsTrigger value="reports" className="data-[state=active]:bg-gray-100 data-[state=active]:text-green-600">
+              Reports
+            </TabsTrigger>
           </TabsList>
 
-          <TabsContent value="overview" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Recent New Hires</CardTitle>
-                <CardDescription>Latest employees in the onboarding process</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
+          {/* New Hires Tab */}
+          <TabsContent value="new-hires" className="space-y-4">
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-gray-900">New Hires</h2>
+              <div className="flex items-center space-x-2">
+                <Input type="text" placeholder="Search employees..." className="sm:w-48 md:w-64" />
+                <Button size="sm">
+                  <Search className="h-4 w-4 mr-2" />
+                  Search
+                </Button>
+              </div>
+            </div>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Name
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Department
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Start Date
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Progress
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
                   {newHires.map((hire) => (
-                    <div key={hire.id} className="flex items-center justify-between p-4 border rounded-lg hover:bg-gray-50">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold">
-                            {hire.name.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium">{hire.name}</p>
-                          <p className="text-sm text-gray-500">{hire.department} • Started {hire.startDate}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-right">
-                          <p className="text-sm font-medium">{hire.progress}% Complete</p>
-                          <div className="w-24 bg-gray-200 rounded-full h-2 mt-1">
-                            <div 
-                              className="bg-blue-600 h-2 rounded-full" 
-                              style={{ width: `${hire.progress}%` }}
-                            />
-                          </div>
-                        </div>
-                        {getStatusBadge(hire.status)}
-                      </div>
-                    </div>
+                    <tr key={hire.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{hire.name}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{hire.department}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{hire.startDate}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <Progress value={hire.progress} className="h-2 rounded-full" />
+                        <div className="text-sm text-gray-500 mt-1">{hire.progress}%</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <Button size="sm" variant="outline">
+                          View Details
+                        </Button>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
+                </tbody>
+              </table>
+            </div>
           </TabsContent>
 
-          <TabsContent value="employees" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <div className="flex justify-between items-center">
-                  <div>
-                    <CardTitle>All Employees</CardTitle>
-                    <CardDescription>Manage employee onboarding status</CardDescription>
-                  </div>
-                  <div className="flex space-x-2">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-4 w-4" />
-                      <Input placeholder="Search employees..." className="pl-10 w-64" />
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {newHires.map((hire) => (
-                    <div key={hire.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-full flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold text-lg">
-                            {hire.name.split(' ').map(n => n[0]).join('')}
-                          </span>
-                        </div>
-                        <div>
-                          <p className="font-medium text-lg">{hire.name}</p>
-                          <p className="text-gray-500">{hire.department}</p>
-                          <p className="text-sm text-gray-400">Started: {hire.startDate}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center space-x-4">
-                        <div className="text-center">
-                          <p className="text-2xl font-bold text-gray-900">{hire.progress}%</p>
-                          <p className="text-sm text-gray-500">Complete</p>
-                        </div>
-                        <div className="flex flex-col space-y-2">
-                          {getStatusBadge(hire.status)}
-                          <Button size="sm" variant="outline">
-                            View Details
-                          </Button>
-                        </div>
-                      </div>
-                    </div>
+          {/* Pending Documents Tab */}
+          <TabsContent value="pending-docs" className="space-y-4">
+            <h2 className="text-xl font-semibold text-orange-600">Pending Document Verifications</h2>
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Employee
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Document
+                    </th>
+                    <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Submitted
+                    </th>
+                    <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Actions
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {pendingDocuments.map((doc) => (
+                    <tr key={doc.id}>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm font-medium text-gray-900">{doc.employee}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{doc.document}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-500">{doc.submitted}</div>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-right">
+                        <Button size="sm">
+                          <Upload className="h-4 w-4 mr-2" />
+                          Verify
+                        </Button>
+                      </td>
+                    </tr>
                   ))}
-                </div>
-              </CardContent>
-            </Card>
+                </tbody>
+              </table>
+            </div>
           </TabsContent>
 
-          <TabsContent value="documents" className="space-y-6">
+          {/* Reports Tab */}
+          <TabsContent value="reports" className="space-y-4">
+            <h2 className="text-xl font-semibold text-green-600">Onboarding Reports</h2>
             <Card>
               <CardHeader>
-                <CardTitle>Document Verification</CardTitle>
-                <CardDescription>Review and verify submitted documents</CardDescription>
+                <CardTitle>Completion Report</CardTitle>
+                <CardDescription>Download a summary of completed onboarding tasks.</CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="text-center py-12">
-                  <FileCheck className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Document verification interface will be implemented here</p>
-                </div>
-              </CardContent>
-            </Card>
-          </TabsContent>
-
-          <TabsContent value="analytics" className="space-y-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Onboarding Analytics</CardTitle>
-                <CardDescription>Track onboarding performance and metrics</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="text-center py-12">
-                  <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                  <p className="text-gray-500">Analytics dashboard will be implemented here</p>
-                </div>
+                <Button>
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Report
+                </Button>
               </CardContent>
             </Card>
           </TabsContent>

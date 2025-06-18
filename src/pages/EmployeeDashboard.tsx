@@ -1,6 +1,7 @@
 
 import { useState } from 'react';
-import { User, FileText, BookOpen, MessageCircle, Download, Upload, CheckCircle } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { User, FileText, BookOpen, MessageCircle, Download, Upload, CheckCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -57,10 +58,18 @@ const EmployeeDashboard = () => {
               <h1 className="text-2xl font-bold text-gray-900">Employee Dashboard</h1>
               <p className="text-sm text-gray-600">Welcome back, John!</p>
             </div>
-            <Button className="bg-blue-600 hover:bg-blue-700">
-              <Download className="h-4 w-4 mr-2" />
-              Download Summary
-            </Button>
+            <div className="flex space-x-3">
+              <Link to="/">
+                <Button variant="outline">
+                  <Home className="h-4 w-4 mr-2" />
+                  Home
+                </Button>
+              </Link>
+              <Button className="bg-blue-600 hover:bg-blue-700">
+                <Download className="h-4 w-4 mr-2" />
+                Download Summary
+              </Button>
+            </div>
           </div>
         </div>
       </div>

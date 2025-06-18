@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, Mail, Lock } from 'lucide-react';
+import { Building2, Mail, Lock, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -30,6 +30,10 @@ const Login = () => {
           </div>
           <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
           <p className="text-gray-600 mt-2">Sign in to your account</p>
+          <Link to="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 mt-2">
+            <Home className="h-4 w-4 mr-1" />
+            Back to Home
+          </Link>
         </div>
 
         <Card className="shadow-lg border-0">
