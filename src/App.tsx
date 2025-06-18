@@ -9,6 +9,7 @@ import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import EmployeeDashboard from "./pages/EmployeeDashboard";
 import AdminDashboard from "./pages/AdminDashboard";
+import AddEmployee from "./pages/AddEmployee";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -25,6 +26,7 @@ const App = () => (
           <Route path="/signup" element={<Signup />} />
           <Route path="/employee-dashboard" element={<EmployeeDashboard />} />
           <Route path="/admin-dashboard" element={<AdminDashboard />} />
+          <Route path="/add-employee" element={<AddEmployee />} />
           <Route path="*" element={<NotFound />} />
         </Routes>
       </BrowserRouter>

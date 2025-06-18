@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { Users, FileCheck, TrendingUp, Clock, UserPlus, Upload, Download, Search, Home } from 'lucide-react';
@@ -68,10 +69,12 @@ const AdminDashboard = () => {
                   Home
                 </Button>
               </Link>
-              <Button className="bg-blue-600 hover:bg-blue-700">
-                <UserPlus className="h-4 w-4 mr-2" />
-                Add New Employee
-              </Button>
+              <Link to="/add-employee">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  <UserPlus className="h-4 w-4 mr-2" />
+                  Add New Employee
+                </Button>
+              </Link>
             </div>
           </div>
         </div>
