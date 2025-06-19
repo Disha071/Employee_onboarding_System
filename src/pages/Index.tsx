@@ -1,11 +1,31 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Building2, Users, Bot, FileCheck, TrendingUp, ArrowRight } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
+  const { user } = useAuth();
+  const navigate = useNavigate();
+
+  const handleEmployeePortalClick = () => {
+    if (user) {
+      navigate('/employee-dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
+
+  const handleAdminDashboardClick = () => {
+    if (user) {
+      navigate('/admin-dashboard');
+    } else {
+      navigate('/login');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50">
       {/* Navigation */}
@@ -17,16 +37,30 @@ const Index = () => {
               <span className="text-xl font-bold text-gray-900">OnboardAI</span>
             </div>
             <div className="flex space-x-4">
-              <Link to="/login">
-                <Button variant="ghost" className="text-gray-700 hover:text-blue-600">
-                  Login
-                </Button>
-              </Link>
-              <Link to="/signup">
-                <Button className="bg-blue-600 hover:bg-blue-700 text-white">
-                  Get Started
-                </Button>
-              </Link>
+              {user ? (
+                <div className="flex items-center space-x-4">
+                  <span className="text-gray-700">Welcome, {user.name}!</span>
+                  <Button
+                    onClick={() => navigate(user.role === 'admin' ? '/admin-dashboard' : '/employee-dashboard')}
+                    className="bg-blue-600 hover:bg-blue-700 text-white"
+                  >
+                    Go to Dashboard
+                  </Button>
+                </div>
+              ) : (
+                <>
+                  <Link to="/login">
+                    <Button variant="ghost" className="text-gray-700 hover:text-blue-600">
+                      Login
+                    </Button>
+                  </Link>
+                  <Link to="/signup">
+                    <Button className="bg-blue-600 hover:bg-blue-700 text-white">
+                      Get Started
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -46,17 +80,22 @@ const Index = () => {
             improve employee experience, and track progress in real-time.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link to="/employee-dashboard">
-              <Button size="lg" className="bg-blue-600 hover:bg-blue-700 text-white">
-                Employee Portal
-                <ArrowRight className="ml-2 h-4 w-4" />
-              </Button>
-            </Link>
-            <Link to="/admin-dashboard">
-              <Button size="lg" variant="outline" className="border-blue-600 text-blue-600 hover:bg-blue-50">
-                Admin Dashboard
-              </Button>
-            </Link>
+            <Button 
+              size="lg" 
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+              onClick={handleEmployeePortalClick}
+            >
+              Employee Portal
+              <ArrowRight className="ml-2 h-4 w-4" />
+            </Button>
+            <Button 
+              size="lg" 
+              variant="outline" 
+              className="border-blue-600 text-blue-600 hover:bg-blue-50"
+              onClick={handleAdminDashboardClick}
+            >
+              Admin Dashboard
+            </Button>
           </div>
         </div>
       </div>
