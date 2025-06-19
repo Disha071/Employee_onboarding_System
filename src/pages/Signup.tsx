@@ -1,11 +1,13 @@
 
 import { useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { Building2, Mail, Lock, User, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -14,16 +16,42 @@ const Signup = () => {
     password: '',
     confirmPassword: '',
   });
+  const [loading, setLoading] = useState(false);
+  const { signup } = useAuth();
+  const { toast } = useToast();
+  const navigate = useNavigate();
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      toast({
+        title: 'Password mismatch',
+        description: 'Passwords do not match',
+        variant: 'destructive',
+      });
       return;
     }
-    console.log('Signup attempt:', formData);
-    // Redirect to employee dashboard after signup
-    window.location.href = '/employee-dashboard';
+
+    setLoading(true);
+
+    try {
+      const success = await signup(formData.name, formData.email, formData.password);
+      if (success) {
+        toast({
+          title: 'Account created successfully',
+          description: 'Welcome to OnboardAI!',
+        });
+        navigate('/employee-dashboard');
+      }
+    } catch (error) {
+      toast({
+        title: 'Signup failed',
+        description: 'Please try again later.',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -126,8 +154,8 @@ const Signup = () => {
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700">
-                Create Account
+              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
+                {loading ? 'Creating Account...' : 'Create Account'}
               </Button>
             </form>
 
