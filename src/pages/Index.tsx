@@ -1,13 +1,13 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, Users, Bot, FileCheck, TrendingUp, ArrowRight } from 'lucide-react';
+import { Building2, Users, Bot, FileCheck, TrendingUp, ArrowRight, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 
 const Index = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const navigate = useNavigate();
 
   const handleEmployeePortalClick = () => {
@@ -24,6 +24,11 @@ const Index = () => {
     } else {
       navigate('/login');
     }
+  };
+
+  const handleLogout = () => {
+    logout();
+    navigate('/');
   };
 
   return (
@@ -45,6 +50,14 @@ const Index = () => {
                     className="bg-blue-600 hover:bg-blue-700 text-white"
                   >
                     Go to Dashboard
+                  </Button>
+                  <Button
+                    onClick={handleLogout}
+                    variant="outline"
+                    className="border-red-600 text-red-600 hover:bg-red-50"
+                  >
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Logout
                   </Button>
                 </div>
               ) : (
