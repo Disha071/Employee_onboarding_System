@@ -7,11 +7,15 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Progress } from '@/components/ui/progress';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/contexts/AuthContext';
+import { useToast } from '@/hooks/use-toast';
 import DocumentUpload from '@/components/DocumentUpload';
 import TrainingModules from '@/components/TrainingModules';
 import ChatBot from '@/components/ChatBot';
 
 const EmployeeDashboard = () => {
+  const { user, updateProfile } = useAuth();
+  const { toast } = useToast();
   const [overallProgress] = useState(65);
   const [profileComplete, setProfileComplete] = useState(false);
   const [documentsUploaded, setDocumentsUploaded] = useState(2);
@@ -48,6 +52,84 @@ const EmployeeDashboard = () => {
     },
   ];
 
+  const handleProfilePictureUpload = () => {
+    const input = document.createElement('input');
+    input.type = 'file';
+    input.accept = 'image/*';
+    input.onchange = (e) => {
+      const file = (e.target as HTMLInputElement).files?.[0];
+      if (file) {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+          const imageUrl = e.target?.result as string;
+          updateProfile({ profilePicture: imageUrl });
+          toast({
+            title: "Success",
+            description: "Profile picture updated successfully!",
+          });
+        };
+        reader.readAsDataURL(file);
+      }
+    };
+    input.click();
+  };
+
+  const handleDownloadSummary = () => {
+    // Create a simple PDF-like summary
+    const summaryContent = `
+EMPLOYEE ONBOARDING SUMMARY
+============================
+
+Employee Information:
+- Name: ${user?.name || 'John Doe'}
+- Email: ${user?.email || 'john.doe@company.com'}
+- Employee ID: EMP-2024-001
+- Department: Engineering
+- Start Date: January 15, 2024
+
+Progress Overview:
+- Overall Progress: ${overallProgress}%
+- Profile Setup: ${profileComplete ? '100%' : '60%'}
+- Documents Uploaded: ${documentsUploaded}/5
+- Training Modules Completed: ${trainingComplete}/8
+
+Document Status:
+- Resume: ✓ Uploaded
+- ID Verification: ✓ Uploaded
+- Educational Certificate: ⏳ Pending
+- Previous Employment: ⏳ Pending
+- Emergency Contact: ⏳ Pending
+
+Training Progress:
+- Company Overview: ✓ Completed
+- Code of Conduct: ✓ Completed
+- Safety Guidelines: ✓ Completed
+- IT Security Training: 🔄 In Progress (60%)
+- Benefits Overview: ⏳ Not Started
+- Performance Management: ⏳ Not Started
+- Communication Tools: ⏳ Not Started
+- Team Introduction: ⏳ Not Started
+
+Generated on: ${new Date().toLocaleDateString()}
+    `;
+
+    // Create and download the text file
+    const blob = new Blob([summaryContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `onboarding-summary-${user?.name?.replace(/\s+/g, '-').toLowerCase() || 'employee'}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Success",
+      description: "Onboarding summary downloaded successfully!",
+    });
+  };
+
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Header */}
@@ -56,7 +138,7 @@ const EmployeeDashboard = () => {
           <div className="flex justify-between items-center h-16">
             <div>
               <h1 className="text-2xl font-bold text-gray-900">Employee Dashboard</h1>
-              <p className="text-sm text-gray-600">Welcome back, John!</p>
+              <p className="text-sm text-gray-600">Welcome back, {user?.name || 'John'}!</p>
             </div>
             <div className="flex space-x-3">
               <Link to="/">
@@ -65,7 +147,7 @@ const EmployeeDashboard = () => {
                   Home
                 </Button>
               </Link>
-              <Button className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleDownloadSummary} className="bg-blue-600 hover:bg-blue-700">
                 <Download className="h-4 w-4 mr-2" />
                 Download Summary
               </Button>
@@ -145,10 +227,26 @@ const EmployeeDashboard = () => {
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
+                <div className="flex items-center space-x-4 mb-6">
+                  {user?.profilePicture && (
+                    <img 
+                      src={user.profilePicture} 
+                      alt="Profile" 
+                      className="w-16 h-16 rounded-full object-cover border-2 border-gray-200"
+                    />
+                  )}
+                  <div>
+                    <p className="text-sm text-gray-600">Profile Picture</p>
+                    <Button onClick={handleProfilePictureUpload} className="bg-blue-600 hover:bg-blue-700 mt-2">
+                      <Upload className="h-4 w-4 mr-2" />
+                      Update Profile Picture
+                    </Button>
+                  </div>
+                </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="text-sm font-medium text-gray-700">Full Name</label>
-                    <p className="text-lg text-gray-900">John Doe</p>
+                    <p className="text-lg text-gray-900">{user?.name || 'John Doe'}</p>
                   </div>
                   <div>
                     <label className="text-sm font-medium text-gray-700">Employee ID</label>
@@ -162,12 +260,14 @@ const EmployeeDashboard = () => {
                     <label className="text-sm font-medium text-gray-700">Start Date</label>
                     <p className="text-lg text-gray-900">January 15, 2024</p>
                   </div>
-                </div>
-                <div className="pt-4">
-                  <Button className="bg-blue-600 hover:bg-blue-700">
-                    <Upload className="h-4 w-4 mr-2" />
-                    Update Profile Picture
-                  </Button>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Email</label>
+                    <p className="text-lg text-gray-900">{user?.email || 'john.doe@company.com'}</p>
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Role</label>
+                    <p className="text-lg text-gray-900 capitalize">{user?.role || 'Employee'}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
