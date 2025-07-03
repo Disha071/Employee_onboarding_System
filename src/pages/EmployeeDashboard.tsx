@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { User, FileText, BookOpen, MessageCircle, Download, Upload, CheckCircle, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,15 +16,42 @@ import ChatBot from '@/components/ChatBot';
 const EmployeeDashboard = () => {
   const { user, updateProfile } = useAuth();
   const { toast } = useToast();
-  const [overallProgress] = useState(65);
-  const [profileComplete, setProfileComplete] = useState(false);
+  
+  // Dynamic state management
   const [documentsUploaded, setDocumentsUploaded] = useState(2);
   const [trainingComplete, setTrainingComplete] = useState(3);
+  const [profileComplete, setProfileComplete] = useState(false);
+  const [overallProgress, setOverallProgress] = useState(0);
+
+  // Calculate profile completion based on user data
+  useEffect(() => {
+    if (user) {
+      const hasName = !!user.name;
+      const hasEmail = !!user.email;
+      const hasProfilePicture = !!user.profilePicture;
+      
+      const completedFields = [hasName, hasEmail, hasProfilePicture].filter(Boolean).length;
+      const totalFields = 3;
+      const profileProgress = (completedFields / totalFields) * 100;
+      
+      setProfileComplete(profileProgress === 100);
+    }
+  }, [user]);
+
+  // Calculate overall progress
+  useEffect(() => {
+    const profileProgress = profileComplete ? 100 : (user?.name && user?.email ? 60 : 20);
+    const documentProgress = (documentsUploaded / 5) * 100;
+    const trainingProgress = (trainingComplete / 8) * 100;
+    
+    const overall = Math.round((profileProgress + documentProgress + trainingProgress) / 3);
+    setOverallProgress(overall);
+  }, [profileComplete, documentsUploaded, trainingComplete, user]);
 
   const stats = [
     {
       title: 'Profile Setup',
-      value: profileComplete ? '100%' : '60%',
+      value: profileComplete ? '100%' : (user?.name && user?.email ? (user?.profilePicture ? '100%' : '80%') : '40%'),
       icon: User,
       color: 'text-blue-600',
       bgColor: 'bg-blue-50',
@@ -74,8 +101,19 @@ const EmployeeDashboard = () => {
     input.click();
   };
 
+  // Handler to update document count from child component
+  const handleDocumentUpdate = (count: number) => {
+    setDocumentsUploaded(count);
+  };
+
+  // Handler to update training count from child component
+  const handleTrainingUpdate = (count: number) => {
+    setTrainingComplete(count);
+  };
+
   const handleDownloadSummary = () => {
-    // Create a simple PDF-like summary
+    const profileProgress = profileComplete ? 100 : (user?.name && user?.email ? (user?.profilePicture ? 100 : 80) : 40);
+    
     const summaryContent = `
 EMPLOYEE ONBOARDING SUMMARY
 ============================
@@ -89,31 +127,30 @@ Employee Information:
 
 Progress Overview:
 - Overall Progress: ${overallProgress}%
-- Profile Setup: ${profileComplete ? '100%' : '60%'}
+- Profile Setup: ${profileProgress}%
 - Documents Uploaded: ${documentsUploaded}/5
 - Training Modules Completed: ${trainingComplete}/8
 
 Document Status:
-- Resume: ✓ Uploaded
-- ID Verification: ✓ Uploaded
-- Educational Certificate: ⏳ Pending
-- Previous Employment: ⏳ Pending
-- Emergency Contact: ⏳ Pending
+- Resume: ${documentsUploaded >= 1 ? '✓ Uploaded' : '⏳ Pending'}
+- ID Verification: ${documentsUploaded >= 2 ? '✓ Uploaded' : '⏳ Pending'}
+- Educational Certificate: ${documentsUploaded >= 3 ? '✓ Uploaded' : '⏳ Pending'}
+- Previous Employment: ${documentsUploaded >= 4 ? '✓ Uploaded' : '⏳ Pending'}
+- Emergency Contact: ${documentsUploaded >= 5 ? '✓ Uploaded' : '⏳ Pending'}
 
 Training Progress:
-- Company Overview: ✓ Completed
-- Code of Conduct: ✓ Completed
-- Safety Guidelines: ✓ Completed
-- IT Security Training: 🔄 In Progress (60%)
-- Benefits Overview: ⏳ Not Started
-- Performance Management: ⏳ Not Started
-- Communication Tools: ⏳ Not Started
-- Team Introduction: ⏳ Not Started
+- Company Overview: ${trainingComplete >= 1 ? '✓ Completed' : '⏳ Not Started'}
+- Code of Conduct: ${trainingComplete >= 2 ? '✓ Completed' : '⏳ Not Started'}
+- Safety Guidelines: ${trainingComplete >= 3 ? '✓ Completed' : '⏳ Not Started'}
+- IT Security Training: ${trainingComplete >= 4 ? '✓ Completed' : '🔄 In Progress'}
+- Benefits Overview: ${trainingComplete >= 5 ? '✓ Completed' : '⏳ Not Started'}
+- Performance Management: ${trainingComplete >= 6 ? '✓ Completed' : '⏳ Not Started'}
+- Communication Tools: ${trainingComplete >= 7 ? '✓ Completed' : '⏳ Not Started'}
+- Team Introduction: ${trainingComplete >= 8 ? '✓ Completed' : '⏳ Not Started'}
 
 Generated on: ${new Date().toLocaleDateString()}
     `;
 
-    // Create and download the text file
     const blob = new Blob([summaryContent], { type: 'text/plain' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
@@ -274,11 +311,11 @@ Generated on: ${new Date().toLocaleDateString()}
           </TabsContent>
 
           <TabsContent value="documents">
-            <DocumentUpload />
+            <DocumentUpload onDocumentCountChange={handleDocumentUpdate} />
           </TabsContent>
 
           <TabsContent value="training">
-            <TrainingModules />
+            <TrainingModules onTrainingCountChange={handleTrainingUpdate} />
           </TabsContent>
 
           <TabsContent value="support">

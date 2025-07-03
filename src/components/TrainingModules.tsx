@@ -1,12 +1,16 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { BookOpen, CheckCircle, Play, Clock, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 import { Badge } from '@/components/ui/badge';
 
-const TrainingModules = () => {
+interface TrainingModulesProps {
+  onTrainingCountChange?: (count: number) => void;
+}
+
+const TrainingModules = ({ onTrainingCountChange }: TrainingModulesProps) => {
   const [modules, setModules] = useState([
     { 
       id: 1, 
@@ -14,7 +18,7 @@ const TrainingModules = () => {
       duration: '30 min', 
       status: 'completed', 
       progress: 100,
-      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' // Sample URL
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
     },
     { 
       id: 2, 
@@ -74,6 +78,14 @@ const TrainingModules = () => {
     },
   ]);
 
+  // Notify parent component when training count changes
+  useEffect(() => {
+    const completedCount = modules.filter(module => module.status === 'completed').length;
+    if (onTrainingCountChange) {
+      onTrainingCountChange(completedCount);
+    }
+  }, [modules, onTrainingCountChange]);
+
   const completedCount = modules.filter(module => module.status === 'completed').length;
   const overallProgress = (completedCount / modules.length) * 100;
 
@@ -117,6 +129,16 @@ const TrainingModules = () => {
     const module = modules.find(m => m.id === moduleId);
     if (module?.youtubeUrl) {
       window.open(module.youtubeUrl, '_blank');
+      // Simulate progress completion after continuing
+      setTimeout(() => {
+        setModules(prev => 
+          prev.map(module => 
+            module.id === moduleId 
+              ? { ...module, status: 'completed', progress: 100 }
+              : module
+          )
+        );
+      }, 1000);
     }
   };
 

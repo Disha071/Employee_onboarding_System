@@ -1,11 +1,15 @@
 
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Upload, FileText, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
 
-const DocumentUpload = () => {
+interface DocumentUploadProps {
+  onDocumentCountChange?: (count: number) => void;
+}
+
+const DocumentUpload = ({ onDocumentCountChange }: DocumentUploadProps) => {
   const [uploadedDocs, setUploadedDocs] = useState([
     { id: 1, name: 'Government ID', status: 'uploaded', file: 'passport.pdf' },
     { id: 2, name: 'Address Proof', status: 'uploaded', file: 'utility_bill.pdf' },
@@ -16,6 +20,14 @@ const DocumentUpload = () => {
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [currentDocId, setCurrentDocId] = useState<number | null>(null);
+
+  // Notify parent component when document count changes
+  useEffect(() => {
+    const uploadedCount = uploadedDocs.filter(doc => doc.status === 'uploaded').length;
+    if (onDocumentCountChange) {
+      onDocumentCountChange(uploadedCount);
+    }
+  }, [uploadedDocs, onDocumentCountChange]);
 
   const handleFileUpload = (docId: number) => {
     setCurrentDocId(docId);
