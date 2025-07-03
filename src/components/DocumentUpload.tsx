@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Upload, FileText, CheckCircle, X } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -14,14 +14,30 @@ const DocumentUpload = () => {
     { id: 5, name: 'Medical Certificate', status: 'pending', file: null },
   ]);
 
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const [currentDocId, setCurrentDocId] = useState<number | null>(null);
+
   const handleFileUpload = (docId: number) => {
-    setUploadedDocs(prev => 
-      prev.map(doc => 
-        doc.id === docId 
-          ? { ...doc, status: 'uploaded', file: 'document.pdf' }
-          : doc
-      )
-    );
+    setCurrentDocId(docId);
+    fileInputRef.current?.click();
+  };
+
+  const handleFileChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (file && currentDocId) {
+      setUploadedDocs(prev => 
+        prev.map(doc => 
+          doc.id === currentDocId 
+            ? { ...doc, status: 'uploaded', file: file.name }
+            : doc
+        )
+      );
+      setCurrentDocId(null);
+    }
+    // Reset the input value to allow selecting the same file again
+    if (event.target) {
+      event.target.value = '';
+    }
   };
 
   const uploadedCount = uploadedDocs.filter(doc => doc.status === 'uploaded').length;
@@ -73,6 +89,15 @@ const DocumentUpload = () => {
             </div>
           </div>
         ))}
+        
+        {/* Hidden file input */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          className="hidden"
+          onChange={handleFileChange}
+          accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+        />
       </CardContent>
     </Card>
   );
