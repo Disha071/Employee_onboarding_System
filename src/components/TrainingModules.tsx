@@ -1,6 +1,6 @@
 
 import { useState } from 'react';
-import { BookOpen, CheckCircle, Play, Clock } from 'lucide-react';
+import { BookOpen, CheckCircle, Play, Clock, ExternalLink } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Progress } from '@/components/ui/progress';
@@ -8,14 +8,70 @@ import { Badge } from '@/components/ui/badge';
 
 const TrainingModules = () => {
   const [modules, setModules] = useState([
-    { id: 1, title: 'Company Overview', duration: '30 min', status: 'completed', progress: 100 },
-    { id: 2, title: 'Code of Conduct', duration: '45 min', status: 'completed', progress: 100 },
-    { id: 3, title: 'Safety Guidelines', duration: '25 min', status: 'completed', progress: 100 },
-    { id: 4, title: 'IT Security Training', duration: '60 min', status: 'in-progress', progress: 60 },
-    { id: 5, title: 'Benefits Overview', duration: '20 min', status: 'not-started', progress: 0 },
-    { id: 6, title: 'Performance Management', duration: '40 min', status: 'not-started', progress: 0 },
-    { id: 7, title: 'Communication Tools', duration: '35 min', status: 'not-started', progress: 0 },
-    { id: 8, title: 'Team Introduction', duration: '15 min', status: 'not-started', progress: 0 },
+    { 
+      id: 1, 
+      title: 'Company Overview', 
+      duration: '30 min', 
+      status: 'completed', 
+      progress: 100,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ' // Sample URL
+    },
+    { 
+      id: 2, 
+      title: 'Code of Conduct', 
+      duration: '45 min', 
+      status: 'completed', 
+      progress: 100,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    },
+    { 
+      id: 3, 
+      title: 'Safety Guidelines', 
+      duration: '25 min', 
+      status: 'completed', 
+      progress: 100,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    },
+    { 
+      id: 4, 
+      title: 'IT Security Training', 
+      duration: '60 min', 
+      status: 'in-progress', 
+      progress: 60,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    },
+    { 
+      id: 5, 
+      title: 'Benefits Overview', 
+      duration: '20 min', 
+      status: 'not-started', 
+      progress: 0,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    },
+    { 
+      id: 6, 
+      title: 'Performance Management', 
+      duration: '40 min', 
+      status: 'not-started', 
+      progress: 0,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    },
+    { 
+      id: 7, 
+      title: 'Communication Tools', 
+      duration: '35 min', 
+      status: 'not-started', 
+      progress: 0,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    },
+    { 
+      id: 8, 
+      title: 'Team Introduction', 
+      duration: '15 min', 
+      status: 'not-started', 
+      progress: 0,
+      youtubeUrl: 'https://www.youtube.com/watch?v=dQw4w9WgXcQ'
+    },
   ]);
 
   const completedCount = modules.filter(module => module.status === 'completed').length;
@@ -44,13 +100,31 @@ const TrainingModules = () => {
   };
 
   const handleStartModule = (moduleId: number) => {
-    setModules(prev => 
-      prev.map(module => 
-        module.id === moduleId 
-          ? { ...module, status: 'in-progress', progress: 20 }
-          : module
-      )
-    );
+    const module = modules.find(m => m.id === moduleId);
+    if (module?.youtubeUrl) {
+      window.open(module.youtubeUrl, '_blank');
+      setModules(prev => 
+        prev.map(module => 
+          module.id === moduleId 
+            ? { ...module, status: 'in-progress', progress: 20 }
+            : module
+        )
+      );
+    }
+  };
+
+  const handleContinueModule = (moduleId: number) => {
+    const module = modules.find(m => m.id === moduleId);
+    if (module?.youtubeUrl) {
+      window.open(module.youtubeUrl, '_blank');
+    }
+  };
+
+  const handleReviewModule = (moduleId: number) => {
+    const module = modules.find(m => m.id === moduleId);
+    if (module?.youtubeUrl) {
+      window.open(module.youtubeUrl, '_blank');
+    }
   };
 
   return (
@@ -95,16 +169,27 @@ const TrainingModules = () => {
                 >
                   <Play className="h-4 w-4 mr-1" />
                   Start
+                  <ExternalLink className="h-3 w-3 ml-1" />
                 </Button>
               )}
               {module.status === 'in-progress' && (
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  size="sm" 
+                  onClick={() => handleContinueModule(module.id)}
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
                   Continue
+                  <ExternalLink className="h-3 w-3 ml-1" />
                 </Button>
               )}
               {module.status === 'completed' && (
-                <Button size="sm" variant="outline">
+                <Button 
+                  size="sm" 
+                  variant="outline"
+                  onClick={() => handleReviewModule(module.id)}
+                >
                   Review
+                  <ExternalLink className="h-3 w-3 ml-1" />
                 </Button>
               )}
             </div>
