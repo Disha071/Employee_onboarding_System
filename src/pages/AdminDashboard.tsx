@@ -1,179 +1,269 @@
 
 import { useState, useEffect } from 'react';
 import { Link } from 'react-router-dom';
-import { Users, FileCheck, TrendingUp, Clock, UserPlus, Upload, Download, Search, Home, Eye } from 'lucide-react';
+import { Users, FileText, BookOpen, TrendingUp, Eye, CheckCircle, Download, Plus, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Input } from '@/components/ui/input';
-import { Progress } from '@/components/ui/progress';
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
-import { employeeService, Employee, DocumentSubmission } from '@/services/employeeService';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+
+interface Employee {
+  id: string;
+  name: string;
+  email: string;
+  department: string;
+  position: string;
+  start_date: string;
+  manager?: string;
+  work_location?: string;
+  phone?: string;
+  created_at: string;
+}
+
+interface DocumentSubmission {
+  id: string;
+  employee_email: string;
+  document_type: string;
+  file_name: string;
+  status: string;
+  submitted_at: string;
+}
 
 const AdminDashboard = () => {
-  const [employees, setEmployees] = useState<Employee[]>([]);
-  const [pendingDocuments, setPendingDocuments] = useState<DocumentSubmission[]>([]);
-  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const { user } = useAuth();
   const { toast } = useToast();
+  const [employees, setEmployees] = useState<Employee[]>([]);
+  const [documents, setDocuments] = useState<DocumentSubmission[]>([]);
+  const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
+  const [showEmployeeDetails, setShowEmployeeDetails] = useState(false);
+  const [loading, setLoading] = useState(true);
 
-  // Load data on component mount
   useEffect(() => {
-    const loadData = () => {
-      setEmployees(employeeService.getEmployees());
-      setPendingDocuments(employeeService.getPendingDocuments());
-    };
-
     loadData();
-    
-    // Refresh data every 5 seconds to catch updates
-    const interval = setInterval(loadData, 5000);
-    return () => clearInterval(interval);
   }, []);
 
-  // Filter employees based on search term
-  const filteredEmployees = employees.filter(employee =>
-    employee.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    employee.department.toLowerCase().includes(searchTerm.toLowerCase())
-  );
-
-  // Calculate stats
-  const stats = [
-    {
-      title: 'Total New Hires',
-      value: employees.length.toString(),
-      icon: Users,
-      color: 'text-blue-600',
-      bgColor: 'bg-blue-50',
-    },
-    {
-      title: 'Pending Verifications',
-      value: pendingDocuments.length.toString(),
-      icon: FileCheck,
-      color: 'text-orange-600',
-      bgColor: 'bg-orange-50',
-    },
-    {
-      title: 'Completed This Month',
-      value: employees.filter(emp => emp.progress >= 100).length.toString(),
-      icon: TrendingUp,
-      color: 'text-green-600',
-      bgColor: 'bg-green-50',
-    },
-    {
-      title: 'Avg. Completion Time',
-      value: '5.2 days',
-      icon: Clock,
-      color: 'text-purple-600',
-      bgColor: 'bg-purple-50',
-    },
-  ];
-
-  const handleViewDetails = (employee: Employee) => {
-    setSelectedEmployee(employee);
-  };
-
-  const handleVerifyDocument = (docId: number) => {
-    employeeService.verifyDocument(docId);
-    setPendingDocuments(employeeService.getPendingDocuments());
-    toast({
-      title: "Document Verified",
-      description: "Document has been successfully verified.",
-    });
-  };
-
-  const handleDownloadReport = () => {
+  const loadData = async () => {
     try {
-      const report = employeeService.generateCompletionReport();
-      
-      const reportContent = `
-ONBOARDING COMPLETION REPORT
-Generated: ${new Date(report.generatedAt).toLocaleString()}
+      // Load employees
+      const { data: employeeData, error: employeeError } = await supabase
+        .from('employee_accounts')
+        .select('*')
+        .order('created_at', { ascending: false });
 
-SUMMARY:
-- Total Employees: ${report.totalEmployees}
-- Completed Onboarding: ${report.completedOnboarding}
-- Completion Rate: ${report.completionRate}%
+      if (employeeError) throw employeeError;
 
-COMPLETED EMPLOYEES:
-${report.employees.map(emp => 
-  `- ${emp.name} (${emp.department}) - Started: ${emp.startDate}`
-).join('\n')}
+      // Load document submissions
+      const { data: documentData, error: documentError } = await supabase
+        .from('document_submissions')
+        .select('*')
+        .eq('status', 'pending')
+        .order('submitted_at', { ascending: false });
 
-PENDING EMPLOYEES:
-${report.pendingEmployees.map(emp => 
-  `- ${emp.name} (${emp.department}) - Progress: ${emp.progress}%`
-).join('\n')}
-      `.trim();
+      if (documentError) throw documentError;
 
-      const blob = new Blob([reportContent], { type: 'text/plain' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = `onboarding-report-${new Date().toISOString().split('T')[0]}.txt`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-      URL.revokeObjectURL(url);
-
-      toast({
-        title: "Report Downloaded",
-        description: "Onboarding completion report has been downloaded successfully.",
-      });
+      setEmployees(employeeData || []);
+      setDocuments(documentData || []);
     } catch (error) {
-      console.error('Error generating report:', error);
+      console.error('Error loading data:', error);
       toast({
         title: "Error",
-        description: "Failed to generate report. Please try again.",
+        description: "Failed to load dashboard data",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleViewEmployee = (employee: Employee) => {
+    setSelectedEmployee(employee);
+    setShowEmployeeDetails(true);
+  };
+
+  const handleVerifyDocument = async (documentId: string) => {
+    try {
+      const { error } = await supabase
+        .from('document_submissions')
+        .update({
+          status: 'verified',
+          verified_at: new Date().toISOString(),
+          verified_by: user?.id
+        })
+        .eq('id', documentId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Document verified successfully!",
+      });
+
+      // Refresh data
+      loadData();
+    } catch (error) {
+      console.error('Error verifying document:', error);
+      toast({
+        title: "Error",
+        description: "Failed to verify document",
         variant: "destructive",
       });
     }
   };
 
+  const handleDownloadReport = () => {
+    const completedCount = employees.filter(emp => {
+      // Assume completed if employee has been there for more than 30 days
+      const startDate = new Date(emp.start_date);
+      const daysSinceStart = Math.floor((Date.now() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+      return daysSinceStart > 30;
+    }).length;
+
+    const completionRate = employees.length > 0 ? Math.round((completedCount / employees.length) * 100) : 0;
+
+    const reportContent = `
+ONBOARDING COMPLETION REPORT
+============================
+
+Generated on: ${new Date().toLocaleDateString()}
+Generated by: ${user?.name || 'Admin'}
+
+Summary:
+- Total Employees: ${employees.length}
+- Completed Onboarding: ${completedCount}
+- Completion Rate: ${completionRate}%
+- Pending Documents: ${documents.length}
+
+Employee Details:
+${employees.map(emp => `
+- Name: ${emp.name}
+  Email: ${emp.email}
+  Department: ${emp.department}
+  Position: ${emp.position}
+  Start Date: ${emp.start_date}
+  Status: ${Math.floor((Date.now() - new Date(emp.start_date).getTime()) / (1000 * 60 * 60 * 24)) > 30 ? 'Completed' : 'In Progress'}
+`).join('')}
+
+Pending Document Verifications:
+${documents.map(doc => `
+- Employee: ${doc.employee_email}
+  Document: ${doc.document_type}
+  File: ${doc.file_name}
+  Submitted: ${new Date(doc.submitted_at).toLocaleDateString()}
+`).join('')}
+    `;
+
+    const blob = new Blob([reportContent], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `onboarding-report-${new Date().toISOString().split('T')[0]}.txt`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+
+    toast({
+      title: "Success",
+      description: "Onboarding report downloaded successfully!",
+    });
+  };
+
+  const stats = [
+    {
+      title: 'Total Employees',
+      value: employees.length.toString(),
+      icon: Users,
+      color: 'text-blue-600',
+      bgColor: 'bg-blue-50 dark:bg-blue-900/20',
+    },
+    {
+      title: 'Pending Documents',
+      value: documents.length.toString(),
+      icon: FileText,
+      color: 'text-orange-600',
+      bgColor: 'bg-orange-50 dark:bg-orange-900/20',
+    },
+    {
+      title: 'Active Employees',
+      value: employees.filter(emp => {
+        const daysSinceStart = Math.floor((Date.now() - new Date(emp.start_date).getTime()) / (1000 * 60 * 60 * 24));
+        return daysSinceStart <= 90;
+      }).length.toString(),
+      icon: TrendingUp,
+      color: 'text-green-600',
+      bgColor: 'bg-green-50 dark:bg-green-900/20',
+    },
+    {
+      title: 'Completion Rate',
+      value: employees.length > 0 ? `${Math.round((employees.filter(emp => {
+        const daysSinceStart = Math.floor((Date.now() - new Date(emp.start_date).getTime()) / (1000 * 60 * 60 * 24));
+        return daysSinceStart > 30;
+      }).length / employees.length) * 100)}%` : '0%',
+      icon: BookOpen,
+      color: 'text-purple-600',
+      bgColor: 'bg-purple-50 dark:bg-purple-900/20',
+    },
+  ];
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="text-gray-600 dark:text-gray-300 mt-4">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white dark:bg-gray-800 shadow-sm border-b border-gray-200 dark:border-gray-700">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Admin Dashboard</h1>
-              <p className="text-sm text-gray-600">Manage employee onboarding</p>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Admin Dashboard 👩‍💻</h1>
+              <p className="text-sm text-gray-600 dark:text-gray-300">Welcome back, {user?.name || 'Admin'}! ✨</p>
             </div>
             <div className="flex space-x-3">
               <Link to="/">
-                <Button variant="outline">
+                <Button variant="outline" className="dark:border-gray-600 dark:text-gray-300">
                   <Home className="h-4 w-4 mr-2" />
                   Home
                 </Button>
               </Link>
               <Link to="/add-employee">
                 <Button className="bg-blue-600 hover:bg-blue-700">
-                  <UserPlus className="h-4 w-4 mr-2" />
-                  Add New Employee
+                  <Plus className="h-4 w-4 mr-2" />
+                  Add Employee
                 </Button>
               </Link>
+              <Button onClick={handleDownloadReport} className="bg-green-600 hover:bg-green-700">
+                <Download className="h-4 w-4 mr-2" />
+                Download Report
+              </Button>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview */}
+        {/* Stats Grid */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {stats.map((stat, index) => (
-            <Card key={index} className="hover:shadow-lg transition-shadow">
+            <Card key={index} className="hover:shadow-lg transition-all duration-300 transform hover:scale-105 dark:bg-gray-800 dark:border-gray-700">
               <CardContent className="p-6">
                 <div className="flex items-center">
                   <div className={`p-3 rounded-lg ${stat.bgColor} mr-4`}>
                     <stat.icon className={`h-6 w-6 ${stat.color}`} />
                   </div>
                   <div>
-                    <p className="text-sm font-medium text-gray-600">{stat.title}</p>
-                    <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-300">{stat.title}</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-white">{stat.value}</p>
                   </div>
                 </div>
               </CardContent>
@@ -181,236 +271,136 @@ ${report.pendingEmployees.map(emp =>
           ))}
         </div>
 
-        {/* Tabs */}
-        <Tabs defaultValue="new-hires" className="space-y-4">
-          <TabsList className="flex">
-            <TabsTrigger value="new-hires" className="data-[state=active]:bg-gray-100 data-[state=active]:text-blue-600">
-              New Hires
-            </TabsTrigger>
-            <TabsTrigger value="pending-docs" className="data-[state=active]:bg-gray-100 data-[state=active]:text-orange-600">
-              Pending Documents
-            </TabsTrigger>
-            <TabsTrigger value="reports" className="data-[state=active]:bg-gray-100 data-[state=active]:text-green-600">
-              Reports
-            </TabsTrigger>
-          </TabsList>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* New Hires */}
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center text-gray-900 dark:text-white">
+                <Users className="h-5 w-5 mr-2 text-blue-600" />
+                New Hires 👥
+              </CardTitle>
+              <CardDescription className="dark:text-gray-300">
+                Recently added employees
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {employees.slice(0, 5).map((employee) => (
+                  <div key={employee.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition-shadow">
+                    <div className="flex items-center space-x-3">
+                      <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
+                        {employee.name.charAt(0)}
+                      </div>
+                      <div>
+                        <p className="font-medium text-gray-900 dark:text-white">{employee.name}</p>
+                        <p className="text-sm text-gray-600 dark:text-gray-300">{employee.department} • {employee.position}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="secondary" className="dark:bg-gray-600 dark:text-gray-200">
+                        {new Date(employee.start_date).toLocaleDateString()}
+                      </Badge>
+                      <Button size="sm" onClick={() => handleViewEmployee(employee)}>
+                        <Eye className="h-4 w-4 mr-1" />
+                        View Details
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {employees.length === 0 && (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">No employees added yet 📝</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
 
-          {/* New Hires Tab */}
-          <TabsContent value="new-hires" className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-gray-900">New Hires</h2>
-              <div className="flex items-center space-x-2">
-                <Input 
-                  type="text" 
-                  placeholder="Search employees..." 
-                  className="sm:w-48 md:w-64"
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                />
-                <Button size="sm">
-                  <Search className="h-4 w-4 mr-2" />
-                  Search
-                </Button>
+          {/* Pending Documents */}
+          <Card className="dark:bg-gray-800 dark:border-gray-700">
+            <CardHeader>
+              <CardTitle className="flex items-center text-gray-900 dark:text-white">
+                <FileText className="h-5 w-5 mr-2 text-orange-600" />
+                Pending Documents 📄
+              </CardTitle>
+              <CardDescription className="dark:text-gray-300">
+                Documents awaiting verification
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {documents.slice(0, 5).map((doc) => (
+                  <div key={doc.id} className="flex items-center justify-between p-4 bg-gray-50 dark:bg-gray-700 rounded-lg hover:shadow-md transition-shadow">
+                    <div>
+                      <p className="font-medium text-gray-900 dark:text-white">{doc.document_type}</p>
+                      <p className="text-sm text-gray-600 dark:text-gray-300">{doc.employee_email}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400">{doc.file_name}</p>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <Badge variant="outline" className="text-orange-600 border-orange-600 dark:text-orange-400 dark:border-orange-400">
+                        Pending
+                      </Badge>
+                      <Button size="sm" onClick={() => handleVerifyDocument(doc.id)} className="bg-green-600 hover:bg-green-700">
+                        <CheckCircle className="h-4 w-4 mr-1" />
+                        Verify
+                      </Button>
+                    </div>
+                  </div>
+                ))}
+                {documents.length === 0 && (
+                  <p className="text-center text-gray-500 dark:text-gray-400 py-8">No pending documents ✅</p>
+                )}
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+
+      {/* Employee Details Dialog */}
+      <Dialog open={showEmployeeDetails} onOpenChange={setShowEmployeeDetails}>
+        <DialogContent className="max-w-2xl dark:bg-gray-800 dark:border-gray-700">
+          <DialogHeader>
+            <DialogTitle className="dark:text-white">Employee Details 👤</DialogTitle>
+            <DialogDescription className="dark:text-gray-300">
+              Complete information for {selectedEmployee?.name}
+            </DialogDescription>
+          </DialogHeader>
+          {selectedEmployee && (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 py-4">
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Full Name</label>
+                <p className="text-lg text-gray-900 dark:text-white">{selectedEmployee.name}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Email</label>
+                <p className="text-lg text-gray-900 dark:text-white">{selectedEmployee.email}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Department</label>
+                <p className="text-lg text-gray-900 dark:text-white">{selectedEmployee.department}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Position</label>
+                <p className="text-lg text-gray-900 dark:text-white">{selectedEmployee.position}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Start Date</label>
+                <p className="text-lg text-gray-900 dark:text-white">{new Date(selectedEmployee.start_date).toLocaleDateString()}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Manager</label>
+                <p className="text-lg text-gray-900 dark:text-white">{selectedEmployee.manager || 'Not assigned'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Work Location</label>
+                <p className="text-lg text-gray-900 dark:text-white">{selectedEmployee.work_location || 'Not specified'}</p>
+              </div>
+              <div>
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Phone</label>
+                <p className="text-lg text-gray-900 dark:text-white">{selectedEmployee.phone || 'Not provided'}</p>
               </div>
             </div>
-            
-            {filteredEmployees.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">No employees found. Add new employees using the "Add New Employee" button.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Department
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Start Date
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Progress
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {filteredEmployees.map((employee) => (
-                      <tr key={employee.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{employee.name}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{employee.department}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{employee.startDate}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <Progress value={employee.progress} className="h-2 rounded-full" />
-                          <div className="text-sm text-gray-500 mt-1">{employee.progress}%</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <Dialog>
-                            <DialogTrigger asChild>
-                              <Button size="sm" variant="outline" onClick={() => handleViewDetails(employee)}>
-                                <Eye className="h-4 w-4 mr-2" />
-                                View Details
-                              </Button>
-                            </DialogTrigger>
-                            <DialogContent className="max-w-2xl">
-                              <DialogHeader>
-                                <DialogTitle>Employee Details</DialogTitle>
-                                <DialogDescription>
-                                  Complete information for {selectedEmployee?.name}
-                                </DialogDescription>
-                              </DialogHeader>
-                              {selectedEmployee && (
-                                <div className="grid grid-cols-2 gap-4 py-4">
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Full Name</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.name}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Email</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.email}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Phone</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.phone}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Department</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.department}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Position</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.position}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Manager</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.manager || 'Not assigned'}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Work Location</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.workLocation || 'Not specified'}</p>
-                                  </div>
-                                  <div>
-                                    <label className="text-sm font-medium text-gray-500">Start Date</label>
-                                    <p className="text-sm text-gray-900">{selectedEmployee.startDate}</p>
-                                  </div>
-                                  <div className="col-span-2">
-                                    <label className="text-sm font-medium text-gray-500">Onboarding Progress</label>
-                                    <div className="mt-2">
-                                      <Progress value={selectedEmployee.progress} className="h-3" />
-                                      <p className="text-sm text-gray-500 mt-1">{selectedEmployee.progress}% completed</p>
-                                    </div>
-                                  </div>
-                                </div>
-                              )}
-                            </DialogContent>
-                          </Dialog>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Pending Documents Tab */}
-          <TabsContent value="pending-docs" className="space-y-4">
-            <h2 className="text-xl font-semibold text-orange-600">Pending Document Verifications</h2>
-            
-            {pendingDocuments.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center">
-                  <p className="text-gray-500">No pending document verifications.</p>
-                </CardContent>
-              </Card>
-            ) : (
-              <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                  <thead className="bg-gray-50">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Employee
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Document Type
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        File Name
-                      </th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Submitted
-                      </th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                        Actions
-                      </th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    {pendingDocuments.map((doc) => (
-                      <tr key={doc.id}>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm font-medium text-gray-900">{doc.employeeName}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{doc.documentType}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">{doc.fileName}</div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="text-sm text-gray-500">
-                            {new Date(doc.submittedAt).toLocaleDateString()}
-                          </div>
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-right">
-                          <Button 
-                            size="sm"
-                            onClick={() => handleVerifyDocument(doc.id)}
-                          >
-                            <Upload className="h-4 w-4 mr-2" />
-                            Verify
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </TabsContent>
-
-          {/* Reports Tab */}
-          <TabsContent value="reports" className="space-y-4">
-            <h2 className="text-xl font-semibold text-green-600">Onboarding Reports</h2>
-            <Card>
-              <CardHeader>
-                <CardTitle>Completion Report</CardTitle>
-                <CardDescription>Download a summary of completed onboarding tasks and employee progress.</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <Button onClick={handleDownloadReport}>
-                  <Download className="h-4 w-4 mr-2" />
-                  Download Report
-                </Button>
-              </CardContent>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
