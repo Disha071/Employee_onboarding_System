@@ -1,4 +1,3 @@
-
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, User, Mail, Phone, Calendar, MapPin, ArrowLeft, Save } from 'lucide-react';
@@ -7,9 +6,12 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { employeeService } from '@/services/employeeService';
+import { useToast } from '@/hooks/use-toast';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
+  const { toast } = useToast();
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -24,10 +26,37 @@ const AddEmployee = () => {
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log('Adding new employee:', formData);
-    // Here you would typically send the data to your backend
-    // For now, we'll just navigate back to admin dashboard
-    navigate('/admin-dashboard');
+    
+    try {
+      // Add employee using the service
+      const newEmployee = employeeService.addEmployee({
+        name: `${formData.firstName} ${formData.lastName}`,
+        email: formData.email,
+        phone: formData.phone,
+        department: formData.department,
+        position: formData.position,
+        startDate: formData.startDate,
+        manager: formData.manager,
+        workLocation: formData.workLocation
+      });
+
+      console.log('Added new employee:', newEmployee);
+      
+      toast({
+        title: "Employee Added Successfully",
+        description: `${newEmployee.name} has been added to the system.`,
+      });
+
+      // Navigate back to admin dashboard
+      navigate('/admin-dashboard');
+    } catch (error) {
+      console.error('Error adding employee:', error);
+      toast({
+        title: "Error",
+        description: "Failed to add employee. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
