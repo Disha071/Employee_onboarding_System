@@ -9,7 +9,153 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      document_submissions: {
+        Row: {
+          document_type: string
+          employee_email: string
+          file_name: string
+          file_url: string | null
+          id: string
+          status: string
+          submitted_at: string
+          verified_at: string | null
+          verified_by: string | null
+        }
+        Insert: {
+          document_type: string
+          employee_email: string
+          file_name: string
+          file_url?: string | null
+          id?: string
+          status?: string
+          submitted_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Update: {
+          document_type?: string
+          employee_email?: string
+          file_name?: string
+          file_url?: string | null
+          id?: string
+          status?: string
+          submitted_at?: string
+          verified_at?: string | null
+          verified_by?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "document_submissions_employee_email_fkey"
+            columns: ["employee_email"]
+            isOneToOne: false
+            referencedRelation: "employee_accounts"
+            referencedColumns: ["email"]
+          },
+        ]
+      }
+      employee_accounts: {
+        Row: {
+          created_at: string
+          created_by: string
+          department: string
+          email: string
+          id: string
+          manager: string | null
+          name: string
+          phone: string | null
+          position: string
+          start_date: string
+          work_location: string | null
+        }
+        Insert: {
+          created_at?: string
+          created_by: string
+          department: string
+          email: string
+          id?: string
+          manager?: string | null
+          name: string
+          phone?: string | null
+          position: string
+          start_date: string
+          work_location?: string | null
+        }
+        Update: {
+          created_at?: string
+          created_by?: string
+          department?: string
+          email?: string
+          id?: string
+          manager?: string | null
+          name?: string
+          phone?: string | null
+          position?: string
+          start_date?: string
+          work_location?: string | null
+        }
+        Relationships: []
+      }
+      employee_profiles: {
+        Row: {
+          employee_email: string
+          id: string
+          profile_picture_url: string | null
+          updated_at: string
+        }
+        Insert: {
+          employee_email: string
+          id?: string
+          profile_picture_url?: string | null
+          updated_at?: string
+        }
+        Update: {
+          employee_email?: string
+          id?: string
+          profile_picture_url?: string | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "employee_profiles_employee_email_fkey"
+            columns: ["employee_email"]
+            isOneToOne: true
+            referencedRelation: "employee_accounts"
+            referencedColumns: ["email"]
+          },
+        ]
+      }
+      training_progress: {
+        Row: {
+          completed_at: string | null
+          employee_email: string
+          id: string
+          module_name: string
+          status: string
+        }
+        Insert: {
+          completed_at?: string | null
+          employee_email: string
+          id?: string
+          module_name: string
+          status?: string
+        }
+        Update: {
+          completed_at?: string | null
+          employee_email?: string
+          id?: string
+          module_name?: string
+          status?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "training_progress_employee_email_fkey"
+            columns: ["employee_email"]
+            isOneToOne: false
+            referencedRelation: "employee_accounts"
+            referencedColumns: ["email"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

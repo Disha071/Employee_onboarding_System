@@ -1,3 +1,4 @@
+
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, User, Mail, Phone, Calendar, MapPin, ArrowLeft, Save } from 'lucide-react';
@@ -6,12 +7,16 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { employeeService } from '@/services/employeeService';
 import { useToast } from '@/hooks/use-toast';
+import { supabase } from '@/integrations/supabase/client';
+import { useAuth } from '@/contexts/AuthContext';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const AddEmployee = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
+  const { user } = useAuth();
+  const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     firstName: '',
     lastName: '',
@@ -24,38 +29,51 @@ const AddEmployee = () => {
     workLocation: '',
   });
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!user) return;
+    
+    setLoading(true);
     
     try {
-      // Add employee using the service
-      const newEmployee = employeeService.addEmployee({
-        name: `${formData.firstName} ${formData.lastName}`,
-        email: formData.email,
-        phone: formData.phone,
-        department: formData.department,
-        position: formData.position,
-        startDate: formData.startDate,
-        manager: formData.manager,
-        workLocation: formData.workLocation
-      });
+      const { data, error } = await supabase
+        .from('employee_accounts')
+        .insert([
+          {
+            name: `${formData.firstName} ${formData.lastName}`,
+            email: formData.email,
+            phone: formData.phone,
+            department: formData.department,
+            position: formData.position,
+            start_date: formData.startDate,
+            manager: formData.manager,
+            work_location: formData.workLocation,
+            created_by: user.id
+          }
+        ])
+        .select()
+        .single();
 
-      console.log('Added new employee:', newEmployee);
+      if (error) throw error;
+
+      console.log('Added new employee:', data);
       
       toast({
-        title: "Employee Added Successfully",
-        description: `${newEmployee.name} has been added to the system.`,
+        title: "Employee Added Successfully! 🎉",
+        description: `${data.name} has been added to the system. 👨‍💼`,
       });
 
       // Navigate back to admin dashboard
       navigate('/admin-dashboard');
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error adding employee:', error);
       toast({
-        title: "Error",
-        description: "Failed to add employee. Please try again.",
+        title: "Error 😞",
+        description: error.message || "Failed to add employee. Please try again.",
         variant: "destructive",
       });
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -74,26 +92,31 @@ const AddEmployee = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 transition-colors duration-300">
       {/* Header */}
-      <div className="bg-white shadow-sm border-b">
+      <div className="bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm shadow-sm border-b border-blue-100 dark:border-gray-700">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between items-center h-16">
             <div className="flex items-center space-x-4">
               <Link to="/admin-dashboard">
-                <Button variant="outline" size="sm">
+                <Button variant="outline" size="sm" className="dark:border-gray-600 dark:text-gray-200">
                   <ArrowLeft className="h-4 w-4 mr-2" />
                   Back to Dashboard
                 </Button>
               </Link>
               <div>
-                <h1 className="text-2xl font-bold text-gray-900">Add New Employee</h1>
-                <p className="text-sm text-gray-600">Enter employee information for onboarding</p>
+                <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Add New Employee 👨‍💼</h1>
+                <p className="text-sm text-gray-600 dark:text-gray-300">Enter employee information for onboarding ✨</p>
               </div>
             </div>
-            <div className="flex items-center space-x-2">
-              <Building2 className="h-6 w-6 text-blue-600" />
-              <span className="text-lg font-semibold text-gray-900">OnboardAI</span>
+            <div className="flex items-center space-x-4">
+              <ThemeToggle />
+              <div className="flex items-center space-x-2">
+                <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg">
+                  <Building2 className="h-5 w-5 text-white" />
+                </div>
+                <span className="text-lg font-semibold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">OnboardAI</span>
+              </div>
             </div>
           </div>
         </div>
@@ -101,14 +124,14 @@ const AddEmployee = () => {
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <Card className="shadow-lg">
+        <Card className="shadow-2xl bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border-0">
           <CardHeader>
-            <CardTitle className="flex items-center space-x-2">
+            <CardTitle className="flex items-center space-x-2 text-gray-900 dark:text-white">
               <User className="h-5 w-5 text-blue-600" />
-              <span>Employee Information</span>
+              <span>Employee Information 📋</span>
             </CardTitle>
-            <CardDescription>
-              Fill in the details for the new employee to start their onboarding process.
+            <CardDescription className="dark:text-gray-300">
+              Fill in the details for the new employee to start their onboarding process 🚀
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -116,7 +139,7 @@ const AddEmployee = () => {
               {/* Personal Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name *</Label>
+                  <Label htmlFor="firstName" className="dark:text-gray-200">First Name * 👤</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
@@ -126,14 +149,14 @@ const AddEmployee = () => {
                       placeholder="John"
                       value={formData.firstName}
                       onChange={handleChange}
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name *</Label>
+                  <Label htmlFor="lastName" className="dark:text-gray-200">Last Name * 👤</Label>
                   <div className="relative">
                     <User className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
@@ -143,7 +166,7 @@ const AddEmployee = () => {
                       placeholder="Doe"
                       value={formData.lastName}
                       onChange={handleChange}
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       required
                     />
                   </div>
@@ -153,7 +176,7 @@ const AddEmployee = () => {
               {/* Contact Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="email">Work Email *</Label>
+                  <Label htmlFor="email" className="dark:text-gray-200">Work Email * 📧</Label>
                   <div className="relative">
                     <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
@@ -163,14 +186,14 @@ const AddEmployee = () => {
                       placeholder="john.doe@company.com"
                       value={formData.email}
                       onChange={handleChange}
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="phone">Phone Number</Label>
+                  <Label htmlFor="phone" className="dark:text-gray-200">Phone Number 📱</Label>
                   <div className="relative">
                     <Phone className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
@@ -180,7 +203,7 @@ const AddEmployee = () => {
                       placeholder="+1 (555) 123-4567"
                       value={formData.phone}
                       onChange={handleChange}
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     />
                   </div>
                 </div>
@@ -189,24 +212,24 @@ const AddEmployee = () => {
               {/* Job Information */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="department">Department *</Label>
+                  <Label htmlFor="department" className="dark:text-gray-200">Department * 🏢</Label>
                   <Select onValueChange={(value) => handleSelectChange('department', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       <SelectValue placeholder="Select department" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="engineering">Engineering</SelectItem>
-                      <SelectItem value="marketing">Marketing</SelectItem>
-                      <SelectItem value="sales">Sales</SelectItem>
-                      <SelectItem value="hr">Human Resources</SelectItem>
-                      <SelectItem value="finance">Finance</SelectItem>
-                      <SelectItem value="operations">Operations</SelectItem>
+                    <SelectContent className="dark:bg-gray-700 dark:border-gray-600">
+                      <SelectItem value="engineering">🔧 Engineering</SelectItem>
+                      <SelectItem value="marketing">📢 Marketing</SelectItem>
+                      <SelectItem value="sales">💼 Sales</SelectItem>
+                      <SelectItem value="hr">👥 Human Resources</SelectItem>
+                      <SelectItem value="finance">💰 Finance</SelectItem>
+                      <SelectItem value="operations">⚙️ Operations</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="position">Position *</Label>
+                  <Label htmlFor="position" className="dark:text-gray-200">Position * 🎯</Label>
                   <Input
                     id="position"
                     name="position"
@@ -214,6 +237,7 @@ const AddEmployee = () => {
                     placeholder="Software Engineer"
                     value={formData.position}
                     onChange={handleChange}
+                    className="dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
                   />
                 </div>
@@ -221,7 +245,7 @@ const AddEmployee = () => {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="space-y-2">
-                  <Label htmlFor="startDate">Start Date *</Label>
+                  <Label htmlFor="startDate" className="dark:text-gray-200">Start Date * 📅</Label>
                   <div className="relative">
                     <Calendar className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                     <Input
@@ -230,55 +254,64 @@ const AddEmployee = () => {
                       type="date"
                       value={formData.startDate}
                       onChange={handleChange}
-                      className="pl-10"
+                      className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                       required
                     />
                   </div>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="manager">Reporting Manager</Label>
+                  <Label htmlFor="manager" className="dark:text-gray-200">Reporting Manager 👨‍💼</Label>
                   <Select onValueChange={(value) => handleSelectChange('manager', value)}>
-                    <SelectTrigger>
+                    <SelectTrigger className="dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       <SelectValue placeholder="Select manager" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="sarah-johnson">Sarah Johnson</SelectItem>
-                      <SelectItem value="mike-chen">Mike Chen</SelectItem>
-                      <SelectItem value="emily-davis">Emily Davis</SelectItem>
-                      <SelectItem value="alex-rodriguez">Alex Rodriguez</SelectItem>
+                    <SelectContent className="dark:bg-gray-700 dark:border-gray-600">
+                      <SelectItem value="sarah-johnson">👩‍💼 Sarah Johnson</SelectItem>
+                      <SelectItem value="mike-chen">👨‍💼 Mike Chen</SelectItem>
+                      <SelectItem value="emily-davis">👩‍💼 Emily Davis</SelectItem>
+                      <SelectItem value="alex-rodriguez">👨‍💼 Alex Rodriguez</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="workLocation">Work Location</Label>
+                <Label htmlFor="workLocation" className="dark:text-gray-200">Work Location 🌍</Label>
                 <div className="relative">
-                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-gray-400 z-10" />
                   <Select onValueChange={(value) => handleSelectChange('workLocation', value)}>
-                    <SelectTrigger className="pl-10">
+                    <SelectTrigger className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white">
                       <SelectValue placeholder="Select work location" />
                     </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="remote">Remote</SelectItem>
-                      <SelectItem value="new-york">New York Office</SelectItem>
-                      <SelectItem value="san-francisco">San Francisco Office</SelectItem>
-                      <SelectItem value="london">London Office</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
+                    <SelectContent className="dark:bg-gray-700 dark:border-gray-600">
+                      <SelectItem value="remote">🏠 Remote</SelectItem>
+                      <SelectItem value="new-york">🏙️ New York Office</SelectItem>
+                      <SelectItem value="san-francisco">🌉 San Francisco Office</SelectItem>
+                      <SelectItem value="london">🏛️ London Office</SelectItem>
+                      <SelectItem value="hybrid">🔄 Hybrid</SelectItem>
                     </SelectContent>
                   </Select>
                 </div>
               </div>
 
               {/* Submit Buttons */}
-              <div className="flex justify-end space-x-4 pt-6 border-t">
-                <Button type="button" variant="outline" onClick={() => navigate('/admin-dashboard')}>
-                  Cancel
+              <div className="flex justify-end space-x-4 pt-6 border-t border-gray-200 dark:border-gray-700">
+                <Button 
+                  type="button" 
+                  variant="outline" 
+                  onClick={() => navigate('/admin-dashboard')}
+                  className="dark:border-gray-600 dark:text-gray-200"
+                >
+                  Cancel ❌
                 </Button>
-                <Button type="submit" className="bg-blue-600 hover:bg-blue-700">
+                <Button 
+                  type="submit" 
+                  className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg transform hover:scale-105 transition-all duration-300"
+                  disabled={loading}
+                >
                   <Save className="h-4 w-4 mr-2" />
-                  Add Employee
+                  {loading ? '⏳ Adding...' : '🎉 Add Employee'}
                 </Button>
               </div>
             </form>

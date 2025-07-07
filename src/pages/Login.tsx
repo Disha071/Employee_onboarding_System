@@ -1,19 +1,21 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, Mail, Lock, Home } from 'lucide-react';
+import { Building2, Mail, Lock, Home, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { useAuth } from '@/contexts/AuthContext';
 import { useToast } from '@/hooks/use-toast';
+import ThemeToggle from '@/components/ThemeToggle';
 
 const Login = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [userType, setUserType] = useState<'employee' | 'admin'>('employee');
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const { login } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
@@ -23,19 +25,25 @@ const Login = () => {
     setLoading(true);
 
     try {
-      const success = await login(email, password, userType);
-      if (success) {
+      const result = await login(email, password, userType);
+      if (result.success) {
         toast({
-          title: 'Login successful',
-          description: `Welcome back!`,
+          title: 'Login successful! 🎉',
+          description: `Welcome back! 👋`,
         });
         // Redirect based on user type
         navigate(userType === 'admin' ? '/admin-dashboard' : '/employee-dashboard');
+      } else {
+        toast({
+          title: 'Login failed 😞',
+          description: result.error || 'Please check your credentials and try again.',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       toast({
-        title: 'Login failed',
-        description: 'Please check your credentials and try again.',
+        title: 'Login failed 😞',
+        description: 'An unexpected error occurred. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -44,58 +52,65 @@ const Login = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-green-50 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4 transition-colors duration-300">
       <div className="w-full max-w-md">
         <div className="text-center mb-8">
           <div className="flex items-center justify-center space-x-2 mb-4">
-            <Building2 className="h-8 w-8 text-blue-600" />
-            <span className="text-2xl font-bold text-gray-900">OnboardAI</span>
+            <div className="p-2 bg-gradient-to-r from-blue-600 to-purple-600 rounded-lg animate-pulse">
+              <Building2 className="h-6 w-6 text-white" />
+            </div>
+            <span className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+              OnboardAI ✨
+            </span>
           </div>
-          <h1 className="text-3xl font-bold text-gray-900">Welcome Back</h1>
-          <p className="text-gray-600 mt-2">Sign in to your account</p>
-          <Link to="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 mt-2">
-            <Home className="h-4 w-4 mr-1" />
-            Back to Home
-          </Link>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white">Welcome Back! 👋</h1>
+          <p className="text-gray-600 dark:text-gray-300 mt-2">Sign in to your account 🔑</p>
+          <div className="flex items-center justify-center space-x-4 mt-4">
+            <Link to="/" className="inline-flex items-center text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300">
+              <Home className="h-4 w-4 mr-1" />
+              Back to Home
+            </Link>
+            <ThemeToggle />
+          </div>
         </div>
 
-        <Card className="shadow-lg border-0">
+        <Card className="shadow-2xl border-0 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
           <CardHeader className="space-y-1">
-            <CardTitle className="text-2xl text-center">Sign In</CardTitle>
-            <CardDescription className="text-center">
-              Enter your email and password to access your account
+            <CardTitle className="text-2xl text-center text-gray-900 dark:text-white">Sign In 🚀</CardTitle>
+            <CardDescription className="text-center dark:text-gray-300">
+              Enter your credentials to access your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-6">
               {/* User Type Selection */}
-              <div className="flex space-x-2 p-1 bg-gray-100 rounded-lg">
+              <div className="flex space-x-2 p-1 bg-gray-100 dark:bg-gray-700 rounded-lg">
                 <button
                   type="button"
                   onClick={() => setUserType('employee')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-300 ${
                     userType === 'employee'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm transform scale-105'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  Employee
+                  👨‍💼 Employee
                 </button>
                 <button
                   type="button"
                   onClick={() => setUserType('admin')}
-                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-colors ${
+                  className={`flex-1 py-2 px-4 rounded-md text-sm font-medium transition-all duration-300 ${
                     userType === 'admin'
-                      ? 'bg-white text-blue-600 shadow-sm'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-white dark:bg-gray-600 text-blue-600 dark:text-blue-400 shadow-sm transform scale-105'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-white'
                   }`}
                 >
-                  Admin
+                  👩‍💻 Admin
                 </button>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="email">Email</Label>
+                <Label htmlFor="email" className="dark:text-gray-200">Email 📧</Label>
                 <div className="relative">
                   <Mail className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
@@ -104,38 +119,49 @@ const Login = () => {
                     placeholder="your@email.com"
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
                   />
                 </div>
               </div>
 
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password" className="dark:text-gray-200">Password 🔒</Label>
                 <div className="relative">
                   <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
                   <Input
                     id="password"
-                    type="password"
+                    type={showPassword ? "text" : "password"}
                     placeholder="••••••••"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    className="pl-10"
+                    className="pl-10 pr-10 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
                     required
                   />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-3 h-4 w-4 text-gray-400 hover:text-gray-600"
+                  >
+                    {showPassword ? <EyeOff /> : <Eye />}
+                  </button>
                 </div>
               </div>
 
-              <Button type="submit" className="w-full bg-blue-600 hover:bg-blue-700" disabled={loading}>
-                {loading ? 'Signing In...' : 'Sign In'}
+              <Button 
+                type="submit" 
+                className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-white shadow-lg transform hover:scale-105 transition-all duration-300" 
+                disabled={loading}
+              >
+                {loading ? '🔄 Signing In...' : '🚀 Sign In'}
               </Button>
             </form>
 
             <div className="mt-6 text-center">
-              <p className="text-sm text-gray-600">
+              <p className="text-sm text-gray-600 dark:text-gray-300">
                 Don't have an account?{' '}
-                <Link to="/signup" className="text-blue-600 hover:text-blue-700 font-medium">
-                  Sign up
+                <Link to="/signup" className="text-blue-600 hover:text-blue-700 dark:text-blue-400 dark:hover:text-blue-300 font-medium">
+                  Sign up 📝
                 </Link>
               </p>
             </div>

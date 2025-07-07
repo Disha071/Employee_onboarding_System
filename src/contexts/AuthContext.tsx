@@ -1,7 +1,9 @@
 
 import React, { createContext, useContext, useState, useEffect } from 'react';
+import { supabase } from '@/integrations/supabase/client';
+import { User, Session } from '@supabase/supabase-js';
 
-interface User {
+interface AuthUser {
   id: string;
   name: string;
   email: string;
@@ -10,11 +12,13 @@ interface User {
 }
 
 interface AuthContextType {
-  user: User | null;
-  login: (email: string, password: string, role: 'employee' | 'admin') => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (updates: Partial<User>) => void;
+  user: AuthUser | null;
+  session: Session | null;
+  loading: boolean;
+  login: (email: string, password: string, role: 'employee' | 'admin') => Promise<{ success: boolean; error?: string }>;
+  signup: (name: string, email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  logout: () => Promise<void>;
+  updateProfile: (updates: Partial<AuthUser>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -28,65 +32,159 @@ export const useAuth = () => {
 };
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState<AuthUser | null>(null);
+  const [session, setSession] = useState<Session | null>(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Check for stored user data on mount
-    const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    // Set up auth state listener
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        setSession(session);
+        if (session?.user) {
+          await loadUserProfile(session.user);
+        } else {
+          setUser(null);
+        }
+        setLoading(false);
+      }
+    );
+
+    // Check for existing session
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setSession(session);
+      if (session?.user) {
+        loadUserProfile(session.user);
+      } else {
+        setLoading(false);
+      }
+    });
+
+    return () => subscription.unsubscribe();
   }, []);
 
-  const login = async (email: string, password: string, role: 'employee' | 'admin'): Promise<boolean> => {
-    // Simulate API call
-    console.log('Login attempt:', { email, password, role });
-    
-    // For demo purposes, accept any email/password combination
-    const mockUser: User = {
-      id: Date.now().toString(),
-      name: email.split('@')[0],
-      email,
-      role,
-      profilePicture: `https://ui-avatars.com/api/?name=${email.split('@')[0]}&background=0891b2&color=fff`
-    };
+  const loadUserProfile = async (authUser: User) => {
+    try {
+      const role = authUser.user_metadata?.role || 'employee';
+      
+      // For employees, verify they exist in employee_accounts
+      if (role === 'employee') {
+        const { data: employeeAccount } = await supabase
+          .from('employee_accounts')
+          .select('name, email')
+          .eq('email', authUser.email)
+          .single();
 
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    return true;
+        if (!employeeAccount) {
+          // Employee not found in accounts, sign them out
+          await supabase.auth.signOut();
+          return;
+        }
+      }
+
+      // Load profile picture if exists
+      let profilePicture = authUser.user_metadata?.avatar_url;
+      
+      if (role === 'employee') {
+        const { data: profile } = await supabase
+          .from('employee_profiles')
+          .select('profile_picture_url')
+          .eq('employee_email', authUser.email)
+          .single();
+        
+        if (profile?.profile_picture_url) {
+          profilePicture = profile.profile_picture_url;
+        }
+      }
+
+      setUser({
+        id: authUser.id,
+        name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
+        email: authUser.email || '',
+        role,
+        profilePicture
+      });
+    } catch (error) {
+      console.error('Error loading user profile:', error);
+      setUser(null);
+    }
   };
 
-  const signup = async (name: string, email: string, password: string): Promise<boolean> => {
-    // Simulate API call
-    console.log('Signup attempt:', { name, email, password });
-    
-    const mockUser: User = {
-      id: Date.now().toString(),
-      name,
-      email,
-      role: 'employee',
-      profilePicture: `https://ui-avatars.com/api/?name=${name}&background=0891b2&color=fff`
-    };
+  const login = async (email: string, password: string, role: 'employee' | 'admin'): Promise<{ success: boolean; error?: string }> => {
+    try {
+      // For employees, check if they exist in employee_accounts first
+      if (role === 'employee') {
+        const { data: employeeAccount } = await supabase
+          .from('employee_accounts')
+          .select('email')
+          .eq('email', email)
+          .single();
 
-    setUser(mockUser);
-    localStorage.setItem('user', JSON.stringify(mockUser));
-    return true;
+        if (!employeeAccount) {
+          return { success: false, error: 'Employee account not found. Please contact your administrator.' };
+        }
+      }
+
+      const { data, error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      // Update user metadata with role if needed
+      if (data.user && data.user.user_metadata?.role !== role) {
+        await supabase.auth.updateUser({
+          data: { role }
+        });
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'An unexpected error occurred' };
+    }
   };
 
-  const logout = () => {
-    setUser(null);
-    localStorage.removeItem('user');
+  const signup = async (name: string, email: string, password: string): Promise<{ success: boolean; error?: string }> => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role: 'admin' // Default to admin for signup
+          },
+          emailRedirectTo: `${window.location.origin}/`
+        }
+      });
+
+      if (error) {
+        return { success: false, error: error.message };
+      }
+
+      return { success: true };
+    } catch (error) {
+      return { success: false, error: 'An unexpected error occurred' };
+    }
   };
 
-  const updateProfile = (updates: Partial<User>) => {
+  const logout = async () => {
+    await supabase.auth.signOut();
+  };
+
+  const updateProfile = (updates: Partial<AuthUser>) => {
     if (!user) return;
     const updatedUser = { ...user, ...updates };
     setUser(updatedUser);
-    localStorage.setItem('user', JSON.stringify(updatedUser));
   };
 
   const value = {
     user,
+    session,
+    loading,
     login,
     signup,
     logout,
