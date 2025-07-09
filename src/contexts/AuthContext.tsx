@@ -1,4 +1,3 @@
-
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { User, Session } from '@supabase/supabase-js';
@@ -40,6 +39,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     // Set up auth state listener
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log('Auth state change:', event, session);
         setSession(session);
         if (session?.user) {
           await loadUserProfile(session.user);
@@ -52,6 +52,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      console.log('Initial session:', session);
       setSession(session);
       if (session?.user) {
         loadUserProfile(session.user);
@@ -66,6 +67,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const loadUserProfile = async (authUser: User) => {
     try {
       const role = authUser.user_metadata?.role || 'employee';
+      console.log('Loading user profile with role:', role);
       
       // For employees, verify they exist in employee_accounts
       if (role === 'employee') {
@@ -76,6 +78,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
           .single();
 
         if (!employeeAccount) {
+          console.log('Employee not found in accounts, signing out');
           // Employee not found in accounts, sign them out
           await supabase.auth.signOut();
           return;
@@ -97,13 +100,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
-      setUser({
+      const userProfile = {
         id: authUser.id,
         name: authUser.user_metadata?.name || authUser.email?.split('@')[0] || 'User',
         email: authUser.email || '',
         role,
         profilePicture
-      });
+      };
+
+      console.log('Setting user profile:', userProfile);
+      setUser(userProfile);
     } catch (error) {
       console.error('Error loading user profile:', error);
       setUser(null);
@@ -134,8 +140,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         return { success: false, error: error.message };
       }
 
-      // Update user metadata with role if needed
-      if (data.user && data.user.user_metadata?.role !== role) {
+      // Update user metadata with role
+      if (data.user) {
+        console.log('Updating user metadata with role:', role);
         await supabase.auth.updateUser({
           data: { role }
         });

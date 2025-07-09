@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, Mail, Lock, Home, Eye, EyeOff } from 'lucide-react';
@@ -23,6 +22,7 @@ const Login = () => {
   // Redirect authenticated users to their appropriate dashboard
   useEffect(() => {
     if (user) {
+      console.log('User authenticated, redirecting based on role:', user.role);
       if (user.role === 'admin') {
         navigate('/admin-dashboard');
       } else {
@@ -36,13 +36,14 @@ const Login = () => {
     setLoading(true);
 
     try {
+      console.log('Attempting login with role:', userType);
       const result = await login(email, password, userType);
       if (result.success) {
         toast({
           title: 'Login successful! 🎉',
           description: `Welcome back! 👋`,
         });
-        // Don't navigate immediately - let the auth state change and ProtectedRoute handle redirection
+        // Don't navigate immediately - let the auth state change and useEffect handle redirection
       } else {
         toast({
           title: 'Login failed 😞',
