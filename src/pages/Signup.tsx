@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, Mail, Lock, User, Home } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -21,6 +21,17 @@ const Signup = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
 
+  // Redirect authenticated users to their appropriate dashboard
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/employee-dashboard');
+      }
+    }
+  }, [user, navigate]);
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (formData.password !== formData.confirmPassword) {
@@ -41,9 +52,7 @@ const Signup = () => {
           title: 'Account created successfully',
           description: 'Welcome to OnboardAI!',
         });
-        // Let ProtectedRoute handle the redirection based on user role
-        // Admin users will go to /admin-dashboard, employees will go to /employee-dashboard
-        navigate('/admin-dashboard');
+        // Let the auth state change handler redirect to the appropriate dashboard
       } else {
         toast({
           title: 'Signup failed',

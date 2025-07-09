@@ -1,5 +1,5 @@
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { Building2, Mail, Lock, Home, Eye, EyeOff } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -16,9 +16,20 @@ const Login = () => {
   const [userType, setUserType] = useState<'employee' | 'admin'>('employee');
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
+
+  // Redirect authenticated users to their appropriate dashboard
+  useEffect(() => {
+    if (user) {
+      if (user.role === 'admin') {
+        navigate('/admin-dashboard');
+      } else {
+        navigate('/employee-dashboard');
+      }
+    }
+  }, [user, navigate]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -31,8 +42,7 @@ const Login = () => {
           title: 'Login successful! 🎉',
           description: `Welcome back! 👋`,
         });
-        // Redirect based on user type
-        navigate(userType === 'admin' ? '/admin-dashboard' : '/employee-dashboard');
+        // Don't navigate immediately - let the auth state change and ProtectedRoute handle redirection
       } else {
         toast({
           title: 'Login failed 😞',
