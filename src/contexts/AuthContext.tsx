@@ -34,6 +34,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<AuthUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pendingRole, setPendingRole] = useState<'employee' | 'admin' | null>(null);
 
   useEffect(() => {
     // Set up auth state listener
@@ -66,8 +67,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (authUser: User) => {
     try {
-      const role = authUser.user_metadata?.role || 'employee';
+      // Use pending role from login if available, otherwise check user metadata
+      const role = pendingRole || authUser.user_metadata?.role || 'employee';
       console.log('Loading user profile with role:', role);
+      
+      // Clear pending role after using it
+      if (pendingRole) {
+        setPendingRole(null);
+      }
       
       // For employees, verify they exist in employee_accounts
       if (role === 'employee') {
@@ -131,12 +138,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         }
       }
 
+      // Store the role before login to use in loadUserProfile
+      setPendingRole(role);
+
       const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
 
       if (error) {
+        setPendingRole(null); // Clear pending role on error
         return { success: false, error: error.message };
       }
 
@@ -150,6 +161,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       return { success: true };
     } catch (error) {
+      setPendingRole(null); // Clear pending role on error
       return { success: false, error: 'An unexpected error occurred' };
     }
   };
