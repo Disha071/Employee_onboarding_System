@@ -17,7 +17,7 @@ const Signup = () => {
     confirmPassword: '',
   });
   const [loading, setLoading] = useState(false);
-  const { signup } = useAuth();
+  const { signup, user } = useAuth();
   const { toast } = useToast();
   const navigate = useNavigate();
 
@@ -35,13 +35,21 @@ const Signup = () => {
     setLoading(true);
 
     try {
-      const success = await signup(formData.name, formData.email, formData.password);
-      if (success) {
+      const result = await signup(formData.name, formData.email, formData.password);
+      if (result.success) {
         toast({
           title: 'Account created successfully',
           description: 'Welcome to OnboardAI!',
         });
-        navigate('/employee-dashboard');
+        // Let ProtectedRoute handle the redirection based on user role
+        // Admin users will go to /admin-dashboard, employees will go to /employee-dashboard
+        navigate('/admin-dashboard');
+      } else {
+        toast({
+          title: 'Signup failed',
+          description: result.error || 'Please try again later.',
+          variant: 'destructive',
+        });
       }
     } catch (error) {
       toast({
