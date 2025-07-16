@@ -62,6 +62,27 @@ const AddEmployee = () => {
     setLoading(true);
     
     try {
+      // First, check if email already exists in employee_accounts
+      const { data: existingEmployee, error: checkError } = await supabase
+        .from('employee_accounts')
+        .select('email')
+        .eq('email', formData.email)
+        .maybeSingle();
+
+      // Only treat this as an error if it's not a "no rows returned" error
+      if (checkError && checkError.code !== 'PGRST116') {
+        throw checkError;
+      }
+
+      if (existingEmployee) {
+        toast({
+          title: "Email Already Exists! ⚠️",
+          description: "An employee with this email already exists in the system.",
+          variant: "destructive",
+        });
+        setLoading(false);
+        return;
+      }
       // First, create the Supabase Auth user
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email: formData.email,
