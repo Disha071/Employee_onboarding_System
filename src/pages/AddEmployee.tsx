@@ -1,7 +1,7 @@
 
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
-import { Building2, User, Mail, Phone, Calendar, MapPin, ArrowLeft, Save } from 'lucide-react';
+import { Building2, User, Mail, Phone, Calendar, MapPin, ArrowLeft, Save, Lock, Eye, EyeOff, RefreshCw, Copy } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -21,6 +21,7 @@ const AddEmployee = () => {
     firstName: '',
     lastName: '',
     email: '',
+    password: '',
     phone: '',
     department: '',
     position: '',
@@ -28,6 +29,31 @@ const AddEmployee = () => {
     manager: '',
     workLocation: '',
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [generatedPassword, setGeneratedPassword] = useState('');
+
+  const generatePassword = () => {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*';
+    const length = 12;
+    let password = '';
+    for (let i = 0; i < length; i++) {
+      password += chars.charAt(Math.floor(Math.random() * chars.length));
+    }
+    setFormData(prev => ({ ...prev, password }));
+    setGeneratedPassword(password);
+    toast({
+      title: "Password Generated! 🔑",
+      description: "Secure password has been generated for the employee.",
+    });
+  };
+
+  const copyPassword = () => {
+    navigator.clipboard.writeText(formData.password);
+    toast({
+      title: "Password Copied! 📋",
+      description: "Password has been copied to clipboard.",
+    });
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -36,6 +62,21 @@ const AddEmployee = () => {
     setLoading(true);
     
     try {
+      // First, create the Supabase Auth user
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email: formData.email,
+        password: formData.password,
+        options: {
+          data: {
+            role: 'employee',
+            full_name: `${formData.firstName} ${formData.lastName}`
+          }
+        }
+      });
+
+      if (authError) throw authError;
+
+      // Then, create the employee record
       const { data, error } = await supabase
         .from('employee_accounts')
         .insert([
@@ -59,8 +100,9 @@ const AddEmployee = () => {
       console.log('Added new employee:', data);
       
       toast({
-        title: "Employee Added Successfully! 🎉",
-        description: `${data.name} has been added to the system. 👨‍💼`,
+        title: "Employee Account Created! 🎉",
+        description: `${data.name} has been added with login credentials. Email: ${formData.email} | Password: ${formData.password}`,
+        duration: 10000,
       });
 
       // Navigate back to admin dashboard
@@ -207,6 +249,60 @@ const AddEmployee = () => {
                     />
                   </div>
                 </div>
+              </div>
+
+              {/* Password Section */}
+              <div className="space-y-2">
+                <Label htmlFor="password" className="dark:text-gray-200">Login Password * 🔐</Label>
+                <div className="flex gap-2">
+                  <div className="relative flex-1">
+                    <Lock className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+                    <Input
+                      id="password"
+                      name="password"
+                      type={showPassword ? "text" : "password"}
+                      placeholder="Enter password or generate one"
+                      value={formData.password}
+                      onChange={handleChange}
+                      className="pl-10 pr-24 dark:bg-gray-700 dark:border-gray-600 dark:text-white"
+                      required
+                    />
+                    <div className="absolute right-2 top-2 flex gap-1">
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="h-7 w-7 p-0 dark:text-gray-400"
+                      >
+                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                      </Button>
+                      {formData.password && (
+                        <Button
+                          type="button"
+                          variant="ghost"
+                          size="sm"
+                          onClick={copyPassword}
+                          className="h-7 w-7 p-0 dark:text-gray-400"
+                        >
+                          <Copy className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={generatePassword}
+                    className="dark:border-gray-600 dark:text-gray-200 whitespace-nowrap"
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Generate
+                  </Button>
+                </div>
+                <p className="text-sm text-gray-500 dark:text-gray-400">
+                  💡 This password will be used by the employee to log into the system. Make sure to share it securely.
+                </p>
               </div>
 
               {/* Job Information */}
