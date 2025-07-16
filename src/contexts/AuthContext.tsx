@@ -79,11 +79,17 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       
       // For employees, verify they exist in employee_accounts
       if (role === 'employee') {
-        const { data: employeeAccount } = await supabase
+        const { data: employeeAccount, error: checkError } = await supabase
           .from('employee_accounts')
           .select('name, email')
           .eq('email', authUser.email)
-          .single();
+          .maybeSingle();
+
+        // Only treat this as an error if it's not a "no rows returned" error
+        if (checkError && checkError.code !== 'PGRST116') {
+          console.error('Database error checking employee account:', checkError);
+          return;
+        }
 
         if (!employeeAccount) {
           console.log('Employee not found in accounts, signing out');
@@ -128,11 +134,16 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     try {
       // For employees, check if they exist in employee_accounts first
       if (role === 'employee') {
-        const { data: employeeAccount } = await supabase
+        const { data: employeeAccount, error: checkError } = await supabase
           .from('employee_accounts')
           .select('email')
           .eq('email', email)
-          .single();
+          .maybeSingle();
+
+        // Only treat this as an error if it's not a "no rows returned" error
+        if (checkError && checkError.code !== 'PGRST116') {
+          return { success: false, error: 'Database error occurred. Please try again.' };
+        }
 
         if (!employeeAccount) {
           return { success: false, error: 'Employee account not found. Please contact your administrator.' };
