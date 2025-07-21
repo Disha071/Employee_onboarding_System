@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
-import { Link } from 'react-router-dom';
-import { Users, FileText, BookOpen, TrendingUp, Eye, CheckCircle, Download, Plus, Home } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Users, FileText, BookOpen, TrendingUp, Eye, CheckCircle, Download, Plus, Home, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -33,8 +33,9 @@ interface DocumentSubmission {
 }
 
 const AdminDashboard = () => {
-  const { user } = useAuth();
+  const { user, logout } = useAuth();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [employees, setEmployees] = useState<Employee[]>([]);
   const [documents, setDocuments] = useState<DocumentSubmission[]>([]);
   const [selectedEmployee, setSelectedEmployee] = useState<Employee | null>(null);
@@ -111,6 +112,11 @@ const AdminDashboard = () => {
         variant: "destructive",
       });
     }
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
   };
 
   const handleDownloadReport = () => {
@@ -245,6 +251,14 @@ ${documents.map(doc => `
               <Button onClick={handleDownloadReport} className="bg-green-600 hover:bg-green-700">
                 <Download className="h-4 w-4 mr-2" />
                 Download Report
+              </Button>
+              <Button
+                onClick={handleLogout}
+                variant="outline"
+                className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+              >
+                <LogOut className="h-4 w-4 mr-2" />
+                Logout
               </Button>
             </div>
           </div>

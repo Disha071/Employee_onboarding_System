@@ -1,7 +1,8 @@
 
-import { Link } from 'react-router-dom';
-import { Home, Download } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { Home, Download, LogOut } from 'lucide-react';
 import { Button } from '@/components/ui/button';
+import { useAuth } from '@/contexts/AuthContext';
 
 interface EmployeeHeaderProps {
   userName?: string;
@@ -9,6 +10,14 @@ interface EmployeeHeaderProps {
 }
 
 const EmployeeHeader = ({ userName, onDownloadSummary }: EmployeeHeaderProps) => {
+  const { logout } = useAuth();
+  const navigate = useNavigate();
+
+  const handleLogout = async () => {
+    await logout();
+    navigate('/');
+  };
+
   return (
     <div className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,6 +36,14 @@ const EmployeeHeader = ({ userName, onDownloadSummary }: EmployeeHeaderProps) =>
             <Button onClick={onDownloadSummary} className="bg-blue-600 hover:bg-blue-700">
               <Download className="h-4 w-4 mr-2" />
               Download Summary
+            </Button>
+            <Button
+              onClick={handleLogout}
+              variant="outline"
+              className="border-red-600 text-red-600 hover:bg-red-50 dark:hover:bg-red-950"
+            >
+              <LogOut className="h-4 w-4 mr-2" />
+              Logout
             </Button>
           </div>
         </div>
