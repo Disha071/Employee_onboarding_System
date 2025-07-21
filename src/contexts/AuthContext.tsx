@@ -68,9 +68,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const loadUserProfile = async (authUser: User) => {
     try {
-      // Use pending role from login if available, otherwise check user metadata
+      // Use pending role from login if available, otherwise check user metadata, default to employee
       const role = pendingRole || authUser.user_metadata?.role || 'employee';
-      console.log('Loading user profile with role:', role);
+      console.log('Loading user profile with role:', role, 'pendingRole:', pendingRole, 'metadata role:', authUser.user_metadata?.role);
       
       // Clear pending role after using it
       if (pendingRole) {
