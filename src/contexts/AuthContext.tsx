@@ -132,24 +132,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
   const login = async (email: string, password: string, role: 'employee' | 'admin'): Promise<{ success: boolean; error?: string }> => {
     try {
-      // For employees, check if they exist in employee_accounts first
-      if (role === 'employee') {
-        const { data: employeeAccount, error: checkError } = await supabase
-          .from('employee_accounts')
-          .select('email')
-          .eq('email', email)
-          .maybeSingle();
-
-        // Only treat this as an error if it's not a "no rows returned" error
-        if (checkError && checkError.code !== 'PGRST116') {
-          return { success: false, error: 'Database error occurred. Please try again.' };
-        }
-
-        if (!employeeAccount) {
-          return { success: false, error: 'Employee account not found. Please contact your administrator.' };
-        }
-      }
-
       // Store the role before login to use in loadUserProfile
       setPendingRole(role);
 
