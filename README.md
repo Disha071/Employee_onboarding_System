@@ -1,73 +1,37 @@
-# Welcome to your Lovable project
+🚀 Employee Onboarding System
 
-## Project info
+A full-featured Employee Onboarding System designed to streamline the process of adding new employees, tracking onboarding progress, managing documents, and delivering training content. This project uses Supabase as the backend and modern frontend technologies.
 
-**URL**: https://lovable.dev/projects/dc17edaf-66a8-42bf-ae3a-4e2e82b6826b
+📌 Features
+✅ Role-based Authentication (Admin & Employee)
 
-## How can I edit this code?
+📁 Profile Picture and Document Upload
 
-There are several ways of editing your application.
+📽️ Training Modules via YouTube Embeds
 
-**Use Lovable**
+📜 Downloadable Training Summary
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/dc17edaf-66a8-42bf-ae3a-4e2e82b6826b) and start prompting.
+🔍 Searchable Dashboard for Admins
 
-Changes made via Lovable will be committed automatically to this repo.
+🔐 Persistent Login Sessions
 
-**Use your preferred IDE**
+📊 Employee Progress Tracking
 
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
+🛠️ Tech Stack
+Frontend:
 
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
+React (or your preferred frontend library)
 
-Follow these steps:
+Tailwind CSS / CSS Modules
 
-```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+Axios / Fetch API
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Backend:
 
-# Step 3: Install the necessary dependencies.
-npm i
+Supabase (Auth, Storage, Database)
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
-npm run dev
-```
+🧑‍💼 User Roles
+Admin: Add/Remove employees, view progress, manage documents.
 
-**Edit a file directly in GitHub**
+Employee: View assigned training, upload documents, track own onboarding.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
-
-**Use GitHub Codespaces**
-
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
-
-## What technologies are used for this project?
-
-This project is built with:
-
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
-
-## How can I deploy this project?
-
-Simply open [Lovable](https://lovable.dev/projects/dc17edaf-66a8-42bf-ae3a-4e2e82b6826b) and click on Share -> Publish.
-
-## Can I connect a custom domain to my Lovable project?
-
-Yes, you can!
-
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
-
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/tips-tricks/custom-domain#step-by-step-guide)
